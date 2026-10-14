@@ -1,0 +1,1385 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- page -->
+<title>Simulation Système de gestion d'entreprise</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap">
+<style>
+:root {
+  /* Layout: app shell — navy top bar, sticky side rail on wide screens, bottom tab bar on phones; invoices render as white paper sheets */
+  --navy: #0F1B2D; --navy-2: #1A2B4A; --on-navy: #FFFFFF; --teal: #0ECFB0;
+  --accent: #1D6FE8; --accent-hover: #1659C9; --accent-soft: rgba(29,111,232,.10); --on-accent: #FFFFFF;
+  --bg: #F2F5FA; --surface: #FFFFFF; --surface-2: #F6F8FC; --line: #DDE3EE; --line-strong: #C3CDDD;
+  --text: #14223A; --text-2: #3D5078; --muted: #6B7C99;
+  --good: #15803D; --good-bg: rgba(34,197,94,.13); --good-solid: #15803D;
+  --warn: #9A5B06; --warn-bg: rgba(245,166,35,.16); --warn-solid: #F5A623; --on-warn: #2A1A00;
+  --bad: #C62828; --bad-bg: rgba(232,64,64,.10); --bad-solid: #D63A3A;
+  --info: #1D6FE8; --info-bg: rgba(29,111,232,.09);
+  --shadow: 0 1px 2px rgba(15,27,45,.04), 0 6px 18px rgba(15,27,45,.05);
+  --shadow-lg: 0 24px 60px rgba(9,16,28,.28);
+  --overlay: rgba(9,16,28,.55); --toast-bg: #0F1B2D;
+  --paper: #FFFFFF; --paper-ink: #151B27; --paper-line: #DCE1EA; --paper-muted: #5A6577; --paper-warn: #A25A00;
+  --font-display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --r: 10px; --r-lg: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --navy: #0A1322; --navy-2: #14223B;
+    --accent: #3B82F6; --accent-hover: #5B97F8; --accent-soft: rgba(59,130,246,.16);
+    --bg: #0A111E; --surface: #111A2B; --surface-2: #172338; --line: #22304A; --line-strong: #33445F;
+    --text: #E6ECF5; --text-2: #B2BFD5; --muted: #8192AE;
+    --good: #4ADE80; --good-bg: rgba(74,222,128,.13); --good-solid: #16A34A;
+    --warn: #FBBF24; --warn-bg: rgba(251,191,36,.13);
+    --bad: #F87171; --bad-bg: rgba(248,113,113,.14); --bad-solid: #DC2626;
+    --info: #7FB0FF; --info-bg: rgba(59,130,246,.15);
+    --shadow: 0 1px 2px rgba(0,0,0,.35); --shadow-lg: 0 24px 60px rgba(0,0,0,.55);
+    --overlay: rgba(2,6,14,.66); --toast-bg: #2A3B5A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --navy: #0A1322; --navy-2: #14223B;
+  --accent: #3B82F6; --accent-hover: #5B97F8; --accent-soft: rgba(59,130,246,.16);
+  --bg: #0A111E; --surface: #111A2B; --surface-2: #172338; --line: #22304A; --line-strong: #33445F;
+  --text: #E6ECF5; --text-2: #B2BFD5; --muted: #8192AE;
+  --good: #4ADE80; --good-bg: rgba(74,222,128,.13); --good-solid: #16A34A;
+  --warn: #FBBF24; --warn-bg: rgba(251,191,36,.13);
+  --bad: #F87171; --bad-bg: rgba(248,113,113,.14); --bad-solid: #DC2626;
+  --info: #7FB0FF; --info-bg: rgba(59,130,246,.15);
+  --shadow: 0 1px 2px rgba(0,0,0,.35); --shadow-lg: 0 24px 60px rgba(0,0,0,.55);
+  --overlay: rgba(2,6,14,.66); --toast-bg: #2A3B5A;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 var(--font-body); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.2; }
+p { margin: 0; }
+button { font: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.mono { font-family: var(--font-mono); font-size: .78rem; color: var(--text-2); }
+.sub { font-size: .76rem; color: var(--muted); }
+.muted { color: var(--muted); }
+svg.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- Top bar ---------- */
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; background: linear-gradient(120deg, var(--navy), var(--navy-2)); color: var(--on-navy); }
+.topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 1320px; margin: 0 auto; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-text { display: flex; flex-direction: column; min-width: 0; }
+.brand-app { font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; opacity: .62; font-weight: 700; }
+.brand-co { font-family: var(--font-display); font-weight: 600; font-size: 1rem; overflow-wrap: anywhere; line-height: 1.25; }
+.mark { width: 34px; height: 34px; border-radius: 9px; background: var(--navy); color: var(--teal); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: .82rem; overflow: hidden; flex: none; }
+.mark img { width: 100%; height: 100%; object-fit: contain; background: var(--paper); }
+.topbar .mark { background: rgba(255,255,255,.10); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+.user-chip { display: flex; align-items: center; gap: 10px; font-size: .82rem; flex: none; }
+.who { display: flex; flex-direction: column; line-height: 1.2; text-align: right; }
+.who small { opacity: .62; font-size: .7rem; }
+.tb-btn { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); color: var(--on-navy); border-radius: 8px; padding: 7px 10px; display: inline-flex; gap: 6px; align-items: center; cursor: pointer; font-weight: 600; font-size: .8rem; }
+.tb-btn:hover { background: rgba(255,255,255,.16); }
+
+/* ---------- Shell ---------- */
+.shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: 20px; align-items: start; max-width: 1320px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.rail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 74px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 8px; max-height: calc(100vh - 94px); overflow: auto; }
+.rail-group { font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 800; padding: 12px 10px 5px; }
+.nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; background: none; border-radius: 8px; color: var(--text-2); font-weight: 600; font-size: .88rem; cursor: pointer; text-align: left; }
+.nav-btn:hover { background: var(--surface-2); color: var(--text); }
+.nav-btn.active { background: var(--accent-soft); color: var(--accent); }
+.flag { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--warn-solid); flex: none; }
+.main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.tabbar { display: none; }
+
+@media (max-width: 820px) {
+  .shell { grid-template-columns: minmax(0, 1fr); padding-block: 14px calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .rail { display: none; }
+  .tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--surface); border-top: 1px solid var(--line); padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); box-shadow: 0 -4px 18px rgba(15,27,45,.08); }
+  .tab { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 6px 2px; color: var(--muted); font-size: .68rem; font-weight: 700; cursor: pointer; border-radius: 10px; position: relative; }
+  .tab.active { color: var(--accent); background: var(--accent-soft); }
+  .tab svg.i { width: 22px; height: 22px; }
+  .tab .flag { position: absolute; top: 4px; right: calc(50% - 16px); }
+  .who, .hide-sm { display: none; }
+}
+
+/* ---------- Page heading ---------- */
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.page-head h2 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.015em; }
+.page-head p { color: var(--muted); font-size: .9rem; margin-top: 3px; }
+.page-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Cards, KPIs ---------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px; box-shadow: var(--shadow); min-width: 0; }
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.card-title { font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.card-head .card-title { margin: 0; }
+.count { font-family: var(--font-mono); font-size: .72rem; background: var(--surface-2); border: 1px solid var(--line); border-radius: 20px; padding: 0 8px; color: var(--text-2); font-weight: 600; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.kpi-label { font-size: .76rem; color: var(--muted); font-weight: 700; display: flex; align-items: center; gap: 7px; }
+.kpi .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--line-strong); flex: none; }
+.kpi.blue .dot { background: var(--accent); } .kpi.green .dot { background: var(--good-solid); }
+.kpi.teal .dot { background: var(--teal); } .kpi.red .dot { background: var(--bad-solid); }
+.kpi.amber .dot { background: var(--warn-solid); }
+.kpi-value { font-size: 1.28rem; font-weight: 600; overflow-wrap: anywhere; line-height: 1.25; }
+.kpi-note { font-size: .74rem; color: var(--muted); }
+@media (max-width: 520px) { .kpis { grid-template-columns: 1fr 1fr; gap: 10px; } .kpi { padding: 12px; } .kpi-value { font-size: 1.02rem; } }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Buttons ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: var(--accent); color: var(--on-accent); border: 1px solid transparent; padding: 9px 14px; border-radius: 9px; font-weight: 700; font-size: .86rem; cursor: pointer; transition: background .15s, border-color .15s, color .15s; text-align: center; line-height: 1.25; }
+.btn:hover { background: var(--accent-hover); }
+.btn-ghost { background: var(--surface); color: var(--text-2); border-color: var(--line-strong); }
+.btn-ghost:hover { background: var(--surface-2); border-color: var(--accent); color: var(--accent); }
+.btn-good { background: var(--good-solid); color: var(--on-accent); } .btn-good:hover { background: var(--good-solid); filter: brightness(1.1); }
+.btn-warn { background: var(--warn-solid); color: var(--on-warn); } .btn-warn:hover { background: var(--warn-solid); filter: brightness(1.06); }
+.btn-danger { background: var(--bad-solid); color: var(--on-accent); } .btn-danger:hover { background: var(--bad-solid); filter: brightness(1.1); }
+.btn-sm { padding: 6px 10px; font-size: .78rem; border-radius: 8px; }
+.btn-block { width: 100%; }
+.btn svg.i { width: 16px; height: 16px; }
+.icon-btn { width: 32px; height: 32px; display: inline-grid; place-items: center; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text-2); cursor: pointer; flex: none; }
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+.icon-btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+.icon-btn svg.i { width: 16px; height: 16px; }
+
+/* ---------- Forms ---------- */
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field label { font-size: .78rem; font-weight: 700; color: var(--text-2); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.field input, .field select, .field textarea, .search { width: 100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--text); font: inherit; font-size: 16px; }
+.field textarea { resize: vertical; min-height: 110px; }
+.field input:focus, .field select:focus, .field textarea:focus, .search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.field input[type="file"] { padding: 8px; font-size: .85rem; }
+.help { font-size: .74rem; color: var(--muted); }
+.tag { font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--warn); background: var(--warn-bg); padding: 1px 6px; border-radius: 4px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.span-2 { grid-column: 1 / -1; }
+@media (max-width: 700px) { .grid3 { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.fs { border: 0; padding: 0; margin: 0 0 20px; min-width: 0; }
+.fs legend { font-family: var(--font-display); font-weight: 600; font-size: .92rem; margin-bottom: 10px; padding: 0; }
+.search { margin-bottom: 12px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid var(--line); }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: .88rem; padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; margin-bottom: 16px; color: var(--text-2); }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); margin: 1px 0 0; flex: none; }
+.checks-inline { display: flex; flex-wrap: wrap; gap: 8px; }
+.checks-inline .check { margin: 0; padding: 8px 12px; }
+.logo-pick { display: flex; gap: 12px; align-items: center; }
+.logo-prev { width: 64px; height: 64px; border-radius: 12px; border: 1.5px dashed var(--line-strong); display: grid; place-items: center; color: var(--muted); overflow: hidden; flex: none; background: var(--surface-2); }
+.logo-prev img { width: 100%; height: 100%; object-fit: contain; background: var(--paper); }
+.logo-actions { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.rule { display: flex; gap: 8px; align-items: center; font-size: .82rem; padding: 10px 12px; border-radius: 9px; font-weight: 600; }
+.rule.ok { background: var(--good-bg); color: var(--good); }
+.rule.ko { background: var(--warn-bg); color: var(--warn); }
+
+/* ---------- Tables ---------- */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+table.wide { min-width: 620px; }
+th { font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 800; text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--surface-2); }
+th.r, td.r { text-align: right; }
+td.num { white-space: nowrap; }
+.t-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.amt-in { color: var(--good); } .amt-out { color: var(--bad); }
+
+/* ---------- Pills, banners, rows, empty ---------- */
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 20px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.pill.good { background: var(--good-bg); color: var(--good); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); }
+.pill.info { background: var(--info-bg); color: var(--info); }
+.pill.neutral { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--line); }
+.banner { --b-bg: var(--warn-bg); --b-fg: var(--warn); display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: var(--r-lg); background: var(--b-bg); }
+.banner.info { --b-bg: var(--info-bg); --b-fg: var(--info); }
+.banner.good { --b-bg: var(--good-bg); --b-fg: var(--good); }
+.banner-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--surface); display: grid; place-items: center; color: var(--b-fg); flex: none; }
+.banner-body { flex: 1; min-width: 0; }
+.banner-body strong { font-size: .92rem; }
+.banner-body p { font-size: .85rem; color: var(--text-2); margin-top: 2px; }
+.banner .btn { flex: none; }
+.meter { height: 6px; background: var(--surface); border-radius: 6px; margin-top: 9px; overflow: hidden; max-width: 340px; }
+.meter span { display: block; height: 100%; background: var(--warn-solid); border-radius: 6px; }
+@media (max-width: 560px) { .banner { flex-wrap: wrap; } .banner .btn { width: 100%; } }
+.rows { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.row:last-child { border-bottom: 0; }
+.row-btn { width: 100%; background: none; border: 0; border-bottom: 1px solid var(--line); text-align: left; color: inherit; cursor: pointer; border-radius: 0; }
+.row-btn:hover .row-title { color: var(--accent); }
+.row-main { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
+.row-title { font-weight: 600; overflow-wrap: anywhere; }
+.row-sub { font-size: .76rem; color: var(--muted); }
+.empty { text-align: center; padding: 28px 12px; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .88rem; }
+.empty strong { color: var(--text-2); font-size: .95rem; }
+.empty .btn { margin-top: 10px; }
+
+/* ---------- Point of sale ---------- */
+.pos-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .pos-grid { grid-template-columns: minmax(0, 1fr); } }
+.price-line, .total-line { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 12px 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); margin: 12px 0; flex-wrap: wrap; }
+.price-line span, .total-line span { font-size: .82rem; color: var(--muted); font-weight: 700; }
+.price-line strong { color: var(--accent); }
+.total-line strong { font-size: 1.35rem; }
+.pay-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cart-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.cart-empty { padding: 18px 12px; text-align: center; color: var(--muted); font-size: .86rem; border: 1px dashed var(--line-strong); border-radius: 10px; margin-bottom: 12px; }
+#cartArea { margin-bottom: 12px; }
+
+/* ---------- Modal, toasts ---------- */
+.overlay { position: fixed; inset: 0; background: var(--overlay); display: flex; align-items: center; justify-content: center; z-index: 200; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); animation: fade .15s ease; }
+.modal { background: var(--surface); color: var(--text); border-radius: 16px; width: 100%; max-width: 520px; max-height: 100%; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); border: 1px solid var(--line); animation: rise .18s ease; }
+.modal-wide { max-width: 800px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.modal-head h2 { font-size: 1.06rem; }
+.modal-body { padding: 18px; overflow: auto; display: flex; flex-direction: column; gap: 14px; }
+.modal-foot { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 14px 18px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.foot-note { margin-right: auto; font-size: .78rem; color: var(--muted); }
+@media (max-width: 560px) {
+  .overlay { align-items: flex-end; padding: 0; }
+  .modal { border-radius: 18px 18px 0 0; max-height: 92vh; padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
+.more-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.more-item { display: flex; align-items: center; gap: 10px; padding: 14px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); font-weight: 600; font-size: .86rem; cursor: pointer; text-align: left; }
+.more-item.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.toasts { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 300; display: flex; flex-direction: column; gap: 8px; width: min(440px, calc(100% - 32px)); pointer-events: none; }
+@media (max-width: 820px) { .toasts { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); } }
+.toast { background: var(--toast-bg); color: var(--on-navy); padding: 11px 14px; border-radius: 10px; font-size: .86rem; font-weight: 600; display: flex; gap: 10px; align-items: flex-start; box-shadow: var(--shadow-lg); animation: rise .2s ease; }
+.toast svg.i { color: var(--teal); margin-top: 1px; }
+.toast.err svg.i { color: #FF8A8A; }
+.toast.warn svg.i { color: var(--warn-solid); }
+@keyframes fade { from { opacity: 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- Welcome & login ---------- */
+.welcome { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.3fr); gap: 32px; max-width: 1120px; margin: 0 auto; padding-block: 36px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); align-items: start; }
+.welcome-intro { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 96px); display: flex; flex-direction: column; gap: 12px; }
+.eyebrow { font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 800; color: var(--accent); }
+.welcome-intro h1, .login-head h1 { font-size: clamp(1.6rem, 3.2vw, 2.3rem); letter-spacing: -.02em; }
+.welcome-intro > p, .login-head p { color: var(--text-2); max-width: 46ch; }
+.steps { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 12px; }
+.steps li { display: flex; gap: 12px; font-size: .88rem; color: var(--text-2); align-items: flex-start; }
+.steps li svg.i { color: var(--good); margin-top: 2px; }
+.steps strong { color: var(--text); }
+@media (max-width: 860px) { .welcome { grid-template-columns: minmax(0, 1fr); padding-block: 22px 40px; gap: 20px; } .welcome-intro { position: static; } }
+.login { max-width: 760px; margin: 0 auto; padding-block: 36px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 16px; }
+.login-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.co-block { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow); }
+.co-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2); flex-wrap: wrap; }
+.co-name { display: flex; align-items: center; gap: 10px; min-width: 0; font-family: var(--font-display); }
+.co-name strong { font-weight: 600; overflow-wrap: anywhere; }
+.accounts { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; padding: 12px; }
+.account { display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; text-align: left; color: var(--text); width: 100%; }
+.account:hover { border-color: var(--accent); background: var(--accent-soft); }
+.account strong { display: block; font-size: .9rem; }
+.account small { display: block; color: var(--muted); font-size: .76rem; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 800; font-size: .82rem; flex: none; }
+.avatar.admin { background: var(--navy); color: var(--teal); }
+.avatar.sm { width: 32px; height: 32px; }
+.topbar .avatar { background: rgba(255,255,255,.10); color: var(--teal); }
+.co-note { padding: 0 16px 14px; font-size: .82rem; color: var(--muted); }
+.co-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.co-card.active { border-color: var(--accent); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.stats dt { font-size: .7rem; color: var(--muted); font-weight: 700; }
+.stats dd { margin: 0; font-weight: 600; font-size: .86rem; overflow-wrap: anywhere; }
+.warn-text { display: flex; gap: 6px; align-items: center; color: var(--warn); margin-top: 12px; font-weight: 700; }
+.feed { display: flex; flex-direction: column; gap: 12px; }
+.post-meta { font-size: .76rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+
+/* ---------- Paper documents (invoice, inventory) ---------- */
+.doc-sheet { background: var(--paper); color: var(--paper-ink); border-radius: 8px; padding: 28px; border: 1px solid var(--line); font-size: .86rem; }
+.doc-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; border-bottom: 2px solid var(--paper-ink); padding-bottom: 14px; flex-wrap: wrap; }
+.doc-co { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
+.doc-co img { max-height: 56px; max-width: 120px; }
+.doc-co h3 { font-size: 1.15rem; }
+.doc-co p, .doc-legal { color: var(--paper-muted); font-size: .8rem; }
+.doc-legal { font-family: var(--font-mono); font-size: .72rem; text-align: right; line-height: 1.6; }
+.doc-missing { color: var(--paper-warn); font-style: italic; font-family: var(--font-body); }
+.doc-title { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 0 12px; flex-wrap: wrap; gap: 8px; }
+.doc-title h4 { font-size: .95rem; letter-spacing: .08em; text-transform: uppercase; }
+.doc-title span { color: var(--paper-muted); font-size: .8rem; }
+.doc-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 16px; }
+.doc-meta dt { font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; color: var(--paper-muted); font-weight: 700; }
+.doc-meta dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.doc-sheet th { color: var(--paper-muted); border-bottom: 1px solid var(--paper-ink); }
+.doc-sheet td { border-bottom: 1px solid var(--paper-line); }
+.doc-sheet tbody tr:hover td { background: transparent; }
+.doc-sheet .mono { color: var(--paper-muted); }
+.doc-total { display: flex; justify-content: flex-end; gap: 24px; align-items: baseline; margin-top: 14px; padding-top: 12px; border-top: 2px solid var(--paper-ink); flex-wrap: wrap; }
+.doc-total span { color: var(--paper-muted); font-weight: 700; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
+.doc-total strong { font-size: 1.25rem; }
+.doc-foot { margin-top: 28px; padding-top: 12px; border-top: 1px solid var(--paper-line); text-align: center; color: var(--paper-muted); font-size: .8rem; }
+@media (max-width: 560px) { .doc-sheet { padding: 16px; } .doc-meta { grid-template-columns: 1fr 1fr; } .doc-legal { text-align: left; } }
+#printArea { display: none; }
+@media print {
+  body > * { display: none !important; }
+  body > #printArea { display: block !important; }
+  #printArea .doc-sheet { border: 0; padding: 0; }
+}
+</style>
+
+<header class="topbar"><div class="topbar-inner" id="topbar"></div></header>
+<div id="app"></div>
+<nav class="tabbar" id="tabbar" aria-label="Navigation principale" hidden></nav>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div id="printArea"></div>
+
+<script>
+'use strict';
+const KEY = 'simu_gestion_entreprise_v6';
+const DEFAULT_NAME = 'Mon entreprise';
+const DEFAULT_CONFIG = () => ({ nom: DEFAULT_NAME, tel: '', email: '', niu: '', rccm: '', adresse: '', slogan: 'Merci pour votre confiance', devise: 'FCFA', seuilStock: 5, seuilDepense: 50000, logo: '' });
+const ESSENTIALS = [['nom', "nom de l'entreprise"], ['tel', 'téléphone'], ['email', 'email'], ['niu', 'NIU'], ['rccm', 'RCCM']];
+const PRICE_LABEL = { prixDetail: 'Détail', prixGrosVeto: 'Gros Veto', prixSuperGros: 'Super gros' };
+const EXP_STATUS = { en_attente: ["En attente d'approbation", 'warn'], a_payer: ['À payer', 'info'], payee: ['Payée', 'good'] };
+
+let state = { companies: [], currentCompanyId: null, currentUser: null, nextIds: { art: 1, emp: 1, lot: 1, sale: 1, exp: 1, pub: 1 } };
+let currentSection = 'dashboard';
+let cart = [];
+let prevCompanyId = null;
+let storageWarned = false;
+
+// ==================== STORAGE ====================
+function load() {
+  try { const r = localStorage.getItem(KEY); if (r) state = { ...state, ...JSON.parse(r) }; } catch (e) { /* stockage indisponible */ }
+  state.nextIds = { art: 1, emp: 1, lot: 1, sale: 1, exp: 1, pub: 1, ...(state.nextIds || {}) };
+  if (!Array.isArray(state.companies)) state.companies = [];
+  state.companies.forEach(ensureCompanyData);
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch (e) {
+    if (!storageWarned) { storageWarned = true; toast("Ce navigateur bloque l'enregistrement : vos données seront perdues à la fermeture de la page.", 'warn'); }
+  }
+}
+function ensureCompanyData(c) {
+  if (!c) return;
+  ['articles', 'lots', 'sales', 'debts', 'expenses', 'employees', 'publications', 'beneficesCredit'].forEach(k => { if (!Array.isArray(c[k])) c[k] = []; });
+  if (!c.cash) c.cash = { daily: 0, global: 0, movements: [] };
+  if (!Array.isArray(c.cash.movements)) c.cash.movements = [];
+  if (c.config === undefined) c.config = null;
+  if (c.config) c.config = { ...DEFAULT_CONFIG(), ...c.config };
+}
+
+// ==================== HELPERS ====================
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const sum = (arr, f) => arr.reduce((s, x) => s + (Number(f(x)) || 0), 0);
+const byDate = (a, b) => new Date(a.date) - new Date(b.date);
+const now = () => new Date().toISOString();
+const startOfDay = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+const isToday = d => new Date(d) >= startOfDay();
+const fdate = d => new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const getCompany = () => state.companies.find(c => c.id === state.currentCompanyId) || null;
+const isAdmin = () => state.currentUser?.type === 'admin';
+const dev = () => getCompany()?.config?.devise || 'FCFA';
+const fmt = n => Math.round(Number(n) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ' + dev();
+const initials = s => (String(s || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('') || '?').toUpperCase();
+const empName = (c, id) => { const e = c.employees.find(x => x.id === id); return e ? `${e.nom} ${e.prenom || ''}`.trim() : 'Vendeur'; };
+const numOr = (v, d) => (v === '' || isNaN(+v)) ? d : Math.max(0, +v);
+
+function stock(articleId, company = null) {
+  const c = company || getCompany(); if (!c) return 0;
+  return sum(c.lots.filter(l => l.articleId === articleId), l => l.quantite);
+}
+function stockValue(company = null) {
+  const c = company || getCompany(); if (!c) return 0;
+  return c.lots.reduce((t, l) => {
+    const a = c.articles.find(x => x.id === l.articleId);
+    const prix = Number(l.prixSuperGros) || Number(a?.prixSuperGros) || 0;
+    return t + (Number(l.quantite) || 0) * prix;
+  }, 0);
+}
+const cashToday = c => sum(c.cash.movements.filter(m => isToday(m.date)), m => m.type === 'entree' ? m.montant : -m.montant);
+function missingConfig(cfg) {
+  return ESSENTIALS.filter(([k]) => !String(cfg?.[k] || '').trim() || (k === 'nom' && cfg.nom === DEFAULT_NAME)).map(([, l]) => l);
+}
+function addMovement(c, type, montant, description, date = now()) {
+  c.cash.global += type === 'entree' ? montant : -montant;
+  c.cash.movements.unshift({ id: uid('m'), date, type, montant, description, soldeApres: c.cash.global });
+}
+
+// ==================== ICONS ====================
+const ICONS = {
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  pulse: '<path d="M22 12h-4l-3 8L9 4l-3 8H2"/>',
+  box: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
+  inbox: '<path d="M12 3v11m0 0-4-4m4 4 4-4"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/>',
+  cart: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.3a2 2 0 0 0 2 1.7h7.6a2 2 0 0 0 2-1.6L21 8H6"/>',
+  wallet: '<path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2z"/><circle cx="16" cy="14.5" r="1.2"/>',
+  receipt: '<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M22 20c0-2.6-1.8-4.8-4.5-5.6"/>',
+  building: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1M10 21v-3h4v3"/>',
+  megaphone: '<path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 8a5 5 0 0 1 0 8"/>',
+  sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  logout: '<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="m10 17 5-5-5-5M15 12H3"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  file: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  alert: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/>',
+  check: '<path d="m5 12 5 5 9-10"/>',
+  x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  shield: '<path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/>'
+};
+const icon = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`;
+
+// ==================== UI PRIMITIVES ====================
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.setAttribute('role', type === 'err' ? 'alert' : 'status');
+  el.innerHTML = icon(type === 'ok' ? 'check' : 'alert') + `<span>${esc(msg)}</span>`;
+  $('toasts').appendChild(el);
+  setTimeout(() => el.remove(), type === 'err' ? 4500 : 3200);
+}
+function openModal(id, title, body, footer = '', opts = {}) {
+  closeModal(id);
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="overlay" id="${id}" onclick="if(event.target===this)closeModal('${id}')">
+      <div class="modal${opts.wide ? ' modal-wide' : ''}" role="dialog" aria-modal="true" aria-labelledby="${id}-t">
+        <div class="modal-head"><h2 id="${id}-t">${title}</h2><button class="icon-btn" aria-label="Fermer" onclick="closeModal('${id}')">${icon('x')}</button></div>
+        <div class="modal-body">${body}</div>
+        ${footer ? `<div class="modal-foot">${footer}</div>` : ''}
+      </div>
+    </div>`);
+  const first = $(id).querySelector('.modal-body input:not([type=hidden]):not([type=file]):not([type=checkbox]), .modal-body select, .modal-body textarea');
+  if (first) setTimeout(() => first.focus(), 40);
+}
+function closeModal(id) { $(id)?.remove(); }
+function closeAllModals() { document.querySelectorAll('.overlay').forEach(o => o.remove()); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { const o = [...document.querySelectorAll('.overlay')].pop(); if (o) o.remove(); }
+});
+function confirmDialog(message, okLabel = 'Confirmer', danger = false) {
+  return new Promise(resolve => {
+    window.__dlg = v => { closeModal('dlg'); resolve(v); };
+    openModal('dlg', 'Confirmation', `<p>${message}</p>`,
+      `<button class="btn btn-ghost" onclick="__dlg(false)">Annuler</button><button class="btn${danger ? ' btn-danger' : ''}" onclick="__dlg(true)">${okLabel}</button>`);
+  });
+}
+function amountDialog(title, hint, max = null) {
+  return new Promise(resolve => {
+    window.__amt = () => {
+      const v = +$('dlgAmt').value;
+      if (!v || v <= 0) return toast('Saisissez un montant supérieur à 0.', 'err');
+      if (max != null && v > max) return toast(`Le montant dépasse le maximum de ${fmt(max)}.`, 'err');
+      closeModal('dlg'); resolve(v);
+    };
+    openModal('dlg', title,
+      `${hint ? `<p class="muted">${hint}</p>` : ''}<div class="field"><label for="dlgAmt">Montant (${esc(dev())})</label><input type="number" id="dlgAmt" min="1" inputmode="numeric" onkeydown="if(event.key==='Enter')__amt()"></div>`,
+      `<button class="btn btn-ghost" onclick="closeModal('dlg')">Annuler</button><button class="btn" onclick="__amt()">Valider</button>`);
+  });
+}
+const pageHead = (title, sub = '', actions = '') => `<header class="page-head"><div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div>${actions ? `<div class="page-actions">${actions}</div>` : ''}</header>`;
+const kpi = (label, value, tone = '', note = '') => `<div class="kpi ${tone}"><span class="kpi-label"><i class="dot"></i>${label}</span><strong class="kpi-value num">${value}</strong>${note ? `<span class="kpi-note">${note}</span>` : ''}</div>`;
+const pill = (text, tone = 'neutral') => `<span class="pill ${tone}">${text}</span>`;
+const emptyState = (title, text = '', action = '') => `<div class="empty"><strong>${title}</strong>${text ? `<p>${text}</p>` : ''}${action}</div>`;
+const banner = (tone, title, text, action = '', extra = '') => `<div class="banner ${tone}"><span class="banner-icon">${icon(tone === 'warn' ? 'alert' : tone === 'good' ? 'check' : 'info')}</span><div class="banner-body">${title ? `<strong>${title}</strong>` : ''}${text ? `<p>${text}</p>` : ''}${extra}</div>${action}</div>`;
+function stockPill(id) {
+  const s = stock(id), seuil = getCompany().config.seuilStock;
+  return `<span class="pill ${s <= 0 ? 'bad' : s <= seuil ? 'warn' : 'good'} num">${s <= 0 ? 'Rupture' : s}</span>`;
+}
+function configBanner(withButton = true) {
+  const c = getCompany();
+  if (!isAdmin()) return '';
+  const miss = missingConfig(c.config);
+  if (!miss.length) return '';
+  const done = ESSENTIALS.length - miss.length;
+  return banner('warn', `Configuration à compléter · ${done}/${ESSENTIALS.length}`,
+    `Vous utilisez la configuration par défaut. Ajoutez ${miss.join(', ')} pour que vos factures et inventaires soient complets.`,
+    withButton ? `<button class="btn btn-sm" onclick="go('config')">Compléter maintenant</button>` : '',
+    `<div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="${ESSENTIALS.length}" aria-valuenow="${done}"><span style="width:${Math.round(done / ESSENTIALS.length * 100)}%"></span></div>`);
+}
+
+// ==================== NAVIGATION ====================
+const NAV = [
+  { sec: 'dashboard', label: 'Tableau de bord', short: 'Accueil', icon: 'grid', group: 'Activité' },
+  { sec: 'ventes', label: 'Ventes', icon: 'cart', group: 'Activité', perm: 'ventes' },
+  { sec: 'caisse', label: 'Caisse', icon: 'wallet', group: 'Activité', admin: true },
+  { sec: 'dettes', label: 'Dettes clients', short: 'Dettes', icon: 'card', group: 'Activité', admin: true },
+  { sec: 'depenses', label: 'Dépenses', icon: 'receipt', group: 'Activité', perm: 'depenses' },
+  { sec: 'articles', label: 'Articles', icon: 'box', group: 'Stock', admin: true },
+  { sec: 'appro', label: 'Approvisionnement', short: 'Appro', icon: 'inbox', group: 'Stock', admin: true },
+  { sec: 'sante', label: 'Santé financière', short: 'Santé', icon: 'pulse', group: 'Pilotage', admin: true },
+  { sec: 'employes', label: 'Employés', icon: 'users', group: 'Pilotage', admin: true },
+  { sec: 'publications', label: 'Publications', short: 'Pubs', icon: 'megaphone', group: 'Pilotage', perm: 'publications' },
+  { sec: 'entreprises', label: 'Mes entreprises', short: 'Entreprises', icon: 'building', group: 'Entreprise', admin: true },
+  { sec: 'config', label: 'Configuration', short: 'Config', icon: 'sliders', group: 'Entreprise', admin: true }
+];
+const TAB_ADMIN = ['dashboard', 'ventes', 'articles', 'caisse'];
+
+function navItems() {
+  const u = state.currentUser; if (!u) return [];
+  if (u.type === 'admin') return NAV;
+  const emp = getCompany()?.employees.find(e => e.id === u.employeeId);
+  const p = emp?.permissions || {};
+  return NAV.filter(n => !n.admin && (!n.perm || p[n.perm] !== false));
+}
+function renderNav() {
+  const items = navItems();
+  const miss = isAdmin() && missingConfig(getCompany().config).length > 0;
+  let html = '', group = '';
+  items.forEach(n => {
+    if (n.group !== group) { group = n.group; html += `<div class="rail-group">${group}</div>`; }
+    html += `<button class="nav-btn" data-sec="${n.sec}" onclick="go('${n.sec}')">${icon(n.icon)}<span>${n.label}</span>${n.sec === 'config' && miss ? '<i class="flag" title="Configuration incomplète"></i>' : ''}</button>`;
+  });
+  $('rail').innerHTML = html;
+  const tabs = isAdmin() ? items.filter(n => TAB_ADMIN.includes(n.sec)) : items.slice(0, 4);
+  const hasMore = items.length > tabs.length;
+  $('tabbar').innerHTML = tabs.map(n => `<button class="tab" data-sec="${n.sec}" onclick="go('${n.sec}')">${icon(n.icon)}<span>${n.short || n.label}</span></button>`).join('')
+    + (hasMore ? `<button class="tab" id="tabMore" onclick="openMore()">${icon('menu')}<span>Plus</span>${miss ? '<i class="flag"></i>' : ''}</button>` : '');
+  $('tabbar').hidden = false;
+  markActive();
+}
+function markActive() {
+  document.querySelectorAll('[data-sec]').forEach(b => b.classList.toggle('active', b.dataset.sec === currentSection));
+  const more = $('tabMore');
+  if (more) more.classList.toggle('active', !document.querySelector(`.tab[data-sec="${currentSection}"]`));
+}
+function openMore() {
+  const items = navItems().filter(n => !document.querySelector(`.tab[data-sec="${n.sec}"]`));
+  openModal('moreSheet', 'Menu', `<div class="more-grid">${items.map(n => `<button class="more-item${n.sec === currentSection ? ' active' : ''}" onclick="go('${n.sec}')">${icon(n.icon)}<span>${n.label}</span></button>`).join('')}</div>`);
+}
+function go(sec) { closeAllModals(); showSection(sec); window.scrollTo({ top: 0 }); }
+
+// ==================== RENDER ====================
+function renderTopbar() {
+  const c = getCompany(), u = state.currentUser, cfg = c?.config;
+  const mark = cfg?.logo ? `<img src="${cfg.logo}" alt="">` : esc(initials(cfg?.nom || 'Gestion'));
+  let right = '';
+  if (cfg && u) {
+    const name = u.type === 'admin' ? 'Administrateur' : empName(c, u.employeeId);
+    right = `<div class="user-chip">
+      <span class="who"><small>${u.type === 'admin' ? 'Accès complet' : 'Vendeur'}</small>${esc(name)}</span>
+      <span class="avatar sm">${u.type === 'admin' ? icon('shield') : esc(initials(name))}</span>
+      <button class="tb-btn" onclick="logout()" aria-label="Déconnexion">${icon('logout')}<span class="hide-sm">Déconnexion</span></button>
+    </div>`;
+  }
+  $('topbar').innerHTML = `<div class="brand"><span class="mark">${mark}</span><span class="brand-text"><span class="brand-app">Simulation · Gestion d'entreprise</span><span class="brand-co">${cfg ? esc(cfg.nom) : 'Bienvenue'}</span></span></div>${right}`;
+}
+function render() {
+  const c = getCompany();
+  renderTopbar();
+  const app = $('app');
+  if (!c || !c.config) { $('tabbar').hidden = true; renderWelcome(app); return; }
+  ensureCompanyData(c);
+  if (!state.currentUser) { $('tabbar').hidden = true; renderLogin(app); return; }
+  app.innerHTML = `<div class="shell"><nav class="rail" id="rail" aria-label="Sections"></nav><main class="main" id="mainContent"></main></div>`;
+  renderNav();
+  showSection(currentSection);
+}
+const VIEWS = {
+  dashboard: m => renderDashboard(m), config: m => renderConfig(m), articles: m => renderArticles(m), appro: m => renderAppro(m),
+  ventes: m => renderVentes(m), caisse: m => renderCaisse(m), depenses: m => renderDepenses(m), dettes: m => renderDettes(m),
+  employes: m => renderEmployes(m), entreprises: m => renderEntreprises(m), publications: m => renderPublications(m), sante: m => renderSante(m)
+};
+function showSection(sec) {
+  const main = $('mainContent'); if (!main) return;
+  if (!navItems().some(n => n.sec === sec)) sec = 'dashboard';
+  currentSection = sec;
+  markActive();
+  VIEWS[sec](main);
+}
+
+// ==================== WELCOME (configuration facultative) ====================
+function configFormHTML(cfg) {
+  const f = (id, label, val, o = {}) => `<div class="field${o.span ? ' span-2' : ''}"><label for="${id}">${label}${o.rec ? '<span class="tag">Recommandé</span>' : ''}</label><input id="${id}" type="${o.type || 'text'}" value="${esc(val)}" placeholder="${esc(o.ph || '')}"${o.attrs || ''}>${o.help ? `<small class="help">${o.help}</small>` : ''}</div>`;
+  return `
+    <fieldset class="fs"><legend>Identité</legend><div class="grid2">
+      ${f('cfgNom', "Nom de l'entreprise", cfg.nom, { rec: true, span: true, ph: 'Ex. Pharmavet Bonabéri' })}
+      <div class="field span-2"><label for="cfgLogoFile">Logo</label>
+        <div class="logo-pick"><span class="logo-prev" id="logoPreview">${cfg.logo ? `<img src="${cfg.logo}" alt="Logo">` : icon('building')}</span>
+          <div class="logo-actions"><input type="file" id="cfgLogoFile" accept="image/*" onchange="previewLogo(this)"><small class="help">PNG ou JPG. L'image est réduite automatiquement.</small></div>
+        </div>
+        <input type="hidden" id="cfgLogo" value="${esc(cfg.logo || '')}">
+      </div>
+      ${f('cfgSlogan', 'Slogan', cfg.slogan, { span: true, ph: 'Affiché en bas de vos factures' })}
+    </div></fieldset>
+    <fieldset class="fs"><legend>Coordonnées</legend><div class="grid2">
+      ${f('cfgTel', 'Téléphone', cfg.tel, { rec: true, type: 'tel', ph: '+237 6XX XX XX XX' })}
+      ${f('cfgEmail', 'Email', cfg.email, { rec: true, type: 'email', ph: 'contact@entreprise.cm' })}
+      ${f('cfgAdresse', 'Adresse', cfg.adresse, { span: true, ph: 'Quartier, ville' })}
+    </div></fieldset>
+    <fieldset class="fs"><legend>Mentions légales</legend><div class="grid2">
+      ${f('cfgNiu', 'NIU', cfg.niu, { rec: true, ph: "Numéro d'identifiant unique", help: 'Imprimé sur chaque facture.' })}
+      ${f('cfgRccm', 'RCCM', cfg.rccm, { rec: true, ph: 'Ex. RC/DLA/2024/B/1234', help: 'Registre du commerce.' })}
+    </div></fieldset>
+    <fieldset class="fs"><legend>Paramètres</legend><div class="grid3">
+      <div class="field"><label for="cfgDevise">Devise</label><select id="cfgDevise">${['FCFA', 'EUR', 'USD'].map(d => `<option${cfg.devise === d ? ' selected' : ''}>${d}</option>`).join('')}</select></div>
+      ${f('cfgSeuilStock', 'Seuil alerte stock', cfg.seuilStock, { type: 'number', attrs: ' min="0" inputmode="numeric"', help: 'Alerte à ce stock ou moins.' })}
+      ${f('cfgSeuilDep', 'Seuil approbation dépenses', cfg.seuilDepense, { type: 'number', attrs: ' min="0" inputmode="numeric"', help: "Au-delà, l'admin approuve." })}
+    </div></fieldset>`;
+}
+function readConfigForm() {
+  const v = id => $(id).value.trim();
+  const email = v('cfgEmail');
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+    $('cfgEmail').focus();
+    toast("L'adresse email n'est pas valide (ex. contact@entreprise.cm).", 'err');
+    return null;
+  }
+  return {
+    nom: v('cfgNom') || DEFAULT_NAME, tel: v('cfgTel'), email, niu: v('cfgNiu'), rccm: v('cfgRccm'),
+    adresse: v('cfgAdresse'), slogan: v('cfgSlogan'), devise: $('cfgDevise').value,
+    seuilStock: numOr(v('cfgSeuilStock'), 5), seuilDepense: numOr(v('cfgSeuilDep'), 50000), logo: $('cfgLogo').value
+  };
+}
+function previewLogo(input) {
+  const file = input.files[0]; if (!file) return;
+  if (!file.type.startsWith('image/')) return toast('Choisissez une image (PNG, JPG…).', 'err');
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, 240 / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(img.width * s)); cv.height = Math.max(1, Math.round(img.height * s));
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      const url = cv.toDataURL('image/png');
+      $('cfgLogo').value = url;
+      $('logoPreview').innerHTML = `<img src="${url}" alt="Logo">`;
+    };
+    img.onerror = () => toast("Impossible de lire cette image.", 'err');
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function renderWelcome(app) {
+  const hasOthers = state.companies.some(c => c.config);
+  app.innerHTML = `
+    <div class="welcome">
+      <section class="welcome-intro">
+        <p class="eyebrow">${hasOthers ? 'Nouvelle entreprise' : 'Bienvenue'}</p>
+        <h1>Votre entreprise est prête en une minute</h1>
+        <p>Une configuration par défaut est déjà remplie. Modifiez ce que vous voulez, ou commencez tout de suite et complétez plus tard depuis <strong>Configuration</strong>.</p>
+        <ul class="steps">
+          <li>${icon('check')}<span><strong>Nom, téléphone et email</strong> apparaissent en tête de vos factures.</span></li>
+          <li>${icon('check')}<span><strong>NIU et RCCM</strong> rendent vos documents conformes.</span></li>
+          <li>${icon('check')}<span><strong>Les seuils</strong> déclenchent les alertes de stock et l'approbation des grosses dépenses.</span></li>
+        </ul>
+      </section>
+      <section class="card">
+        ${configFormHTML(DEFAULT_CONFIG())}
+        <label class="check" for="cfgDemo"><input type="checkbox" id="cfgDemo" checked><span><strong>Ajouter des données d'exemple</strong><br>Quatre produits vétérinaires, un vendeur et deux ventes pour découvrir l'application. Vous pourrez les effacer en un clic.</span></label>
+        <div class="form-actions">
+          ${hasOthers ? `<button class="btn btn-ghost" onclick="cancelNewCompany()">Annuler</button>` : ''}
+          <button class="btn btn-ghost" onclick="createCompany(true)">Configurer plus tard</button>
+          <button class="btn" onclick="createCompany(false)">Enregistrer et commencer</button>
+        </div>
+      </section>
+    </div>`;
+}
+function createCompany(useDefault) {
+  const config = useDefault ? DEFAULT_CONFIG() : readConfigForm();
+  if (!config) return;
+  const withDemo = $('cfgDemo')?.checked;
+  const c = { id: uid('c'), config, articles: [], lots: [], sales: [], debts: [], expenses: [], employees: [], publications: [], cash: { daily: 0, global: 0, movements: [] }, beneficesCredit: [] };
+  state.companies.push(c);
+  state.currentCompanyId = c.id;
+  state.currentUser = { type: 'admin' };
+  if (withDemo) seedDemo(c);
+  currentSection = 'dashboard';
+  save(); render(); window.scrollTo({ top: 0 });
+  toast(useDefault ? 'Entreprise créée avec la configuration par défaut.' : 'Entreprise créée.');
+}
+function cancelNewCompany() {
+  state.currentCompanyId = prevCompanyId || state.companies.find(c => c.config)?.id || null;
+  state.currentUser = null; save(); render();
+}
+function empMatricule(c) {
+  const prefix = (c.config.nom || 'ENT').normalize('NFD').replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase().padEnd(3, 'X');
+  return prefix + String(state.nextIds.emp++).padStart(4, '0');
+}
+function seedDemo(c) {
+  const ago = h => new Date(Date.now() - h * 3600e3).toISOString();
+  [
+    ['Ivermectine 1 % – flacon 50 ml', 2500, 4500, 4000, 3500, 24],
+    ['Oxytétracycline LA 20 % – 100 ml', 3200, 5800, 5200, 4500, 15],
+    ['Vitamine AD3E – 100 ml', 1800, 3500, 3000, 2500, 4],
+    ['Seringues 20 ml – boîte de 50', 4000, 7500, 6500, 5500, 10]
+  ].forEach(([nom, pa, pd, pgv, psg, q]) => {
+    const a = { id: uid('a'), matricule: 'ARTICLE' + String(state.nextIds.art++).padStart(4, '0'), nom, prixDetail: pd, prixGrosVeto: pgv, prixSuperGros: psg };
+    c.articles.push(a);
+    c.lots.push({ id: uid('l'), articleId: a.id, quantite: q, quantiteInitiale: q, prixAchat: pa, prixDetail: pd, prixGrosVeto: pgv, prixSuperGros: psg, date: ago(72) });
+  });
+  c.employees.push({ id: uid('emp'), matricule: empMatricule(c), nom: 'Mballa', prenom: 'Jean (exemple)', fonction: 'Vendeur', salaire: 85000, permissions: { ventes: true, publications: true, depenses: true }, paiements: [] });
+  const [a1, a2, , a4] = c.articles;
+  recordSale(c, [makeLine(c, a1.id, 3, 'prixDetail'), makeLine(c, a4.id, 1, 'prixGrosVeto')], 'Ferme avicole Nkolbisson (exemple)', 'comptant', ago(2));
+  recordSale(c, [makeLine(c, a2.id, 4, 'prixGrosVeto')], 'Clinique vétérinaire du Littoral (exemple)', 'credit', ago(1));
+  c.publications.unshift({ id: uid('p'), texte: "Bienvenue dans l'équipe ! Pensez à vérifier le stock de Vitamine AD3E avant chaque vente en gros.", date: ago(1), vendeurs: [c.employees[0].id] });
+  c.demo = true;
+}
+
+// ==================== LOGIN ====================
+function renderLogin(app) {
+  const cos = state.companies.filter(c => c.config);
+  app.innerHTML = `
+    <div class="login">
+      <div class="login-head"><p class="eyebrow">Connexion</p><h1>Choisissez un compte</h1><p>Sélectionnez l'entreprise et le profil avec lequel vous voulez travailler.</p></div>
+      ${cos.map(co => {
+        ensureCompanyData(co);
+        const vend = co.employees.filter(e => e.fonction === 'Vendeur');
+        return `<section class="co-block">
+          <div class="co-head"><div class="co-name"><span class="mark">${co.config.logo ? `<img src="${co.config.logo}" alt="">` : esc(initials(co.config.nom))}</span><strong>${esc(co.config.nom)}</strong></div>${co.id === state.currentCompanyId ? pill('Dernière utilisée', 'info') : ''}</div>
+          <div class="accounts">
+            <button class="account" onclick="loginToCompany('${co.id}','admin')"><span class="avatar admin">${icon('shield')}</span><span><strong>Administrateur</strong><small>Accès complet</small></span></button>
+            ${vend.map(v => `<button class="account" onclick="loginToCompany('${co.id}','vendeur','${v.id}')"><span class="avatar">${esc(initials(v.nom + ' ' + (v.prenom || '')))}</span><span><strong>${esc(v.nom)} ${esc(v.prenom || '')}</strong><small>Vendeur · ${esc(v.matricule)}</small></span></button>`).join('')}
+          </div>
+          ${vend.length ? '' : `<p class="co-note">Aucun vendeur pour l'instant. L'administrateur peut en ajouter depuis Employés.</p>`}
+        </section>`;
+      }).join('')}
+      <div><button class="btn btn-ghost" onclick="createNewCompany()">${icon('plus')} Nouvelle entreprise</button></div>
+    </div>`;
+}
+function loginToCompany(companyId, type, employeeId = null) {
+  state.currentCompanyId = companyId;
+  state.currentUser = type === 'admin' ? { type: 'admin' } : { type: 'vendeur', employeeId };
+  currentSection = 'dashboard'; cart = [];
+  save(); render(); window.scrollTo({ top: 0 });
+}
+function logout() { state.currentUser = null; cart = []; closeAllModals(); save(); render(); window.scrollTo({ top: 0 }); }
+function createNewCompany() {
+  prevCompanyId = state.currentCompanyId;
+  state.currentCompanyId = null; state.currentUser = null; cart = [];
+  closeAllModals(); save(); render(); window.scrollTo({ top: 0 });
+}
+
+// ==================== CONFIGURATION ====================
+function renderConfig(main) {
+  const cfg = getCompany().config;
+  main.innerHTML = `
+    ${pageHead('Configuration', 'Ces informations apparaissent sur vos factures et inventaires.')}
+    ${configBanner(false) || banner('good', 'Configuration complète', 'Vos factures affichent toutes les informations légales.')}
+    <section class="card">
+      ${configFormHTML(cfg)}
+      <div class="form-actions"><button class="btn" onclick="updateConfig()">Enregistrer</button></div>
+    </section>
+    <section class="card">
+      <h3 class="card-title">Données de l'entreprise</h3>
+      <p class="muted" style="margin-bottom:14px">Effacez articles, stock, ventes, dettes, dépenses, employés et publications pour repartir de zéro, par exemple après avoir testé avec les données d'exemple. La configuration est conservée.</p>
+      <button class="btn btn-danger" onclick="resetCompanyData()">${icon('trash')} Réinitialiser les données</button>
+    </section>`;
+}
+function updateConfig() {
+  const cfg = readConfigForm(); if (!cfg) return;
+  getCompany().config = cfg;
+  save(); render();
+  toast(missingConfig(cfg).length ? 'Configuration enregistrée. Il reste des informations à compléter.' : 'Configuration complète et enregistrée.');
+}
+async function resetCompanyData() {
+  if (!await confirmDialog("Toutes les données de cette entreprise (articles, stock, ventes, dettes, dépenses, employés, publications, caisse) seront effacées. La configuration est conservée. Continuer ?", 'Tout effacer', true)) return;
+  const c = getCompany();
+  Object.assign(c, { articles: [], lots: [], sales: [], debts: [], expenses: [], employees: [], publications: [], cash: { daily: 0, global: 0, movements: [] }, beneficesCredit: [], demo: false });
+  cart = []; save(); render();
+  toast('Données effacées. Vous repartez de zéro.');
+}
+
+// ==================== DASHBOARD ====================
+const saleRow = s => `<button class="row row-btn" onclick="showInvoice('${s.id}')"><span class="row-main"><span class="row-title">${esc(s.client)}</span><span class="row-sub">${fdate(s.date)}</span></span>${pill(s.mode === 'comptant' ? 'Comptant' : 'Crédit', s.mode === 'comptant' ? 'good' : 'warn')}<strong class="num">${fmt(s.total)}</strong></button>`;
+function renderDashboard(main) {
+  const c = getCompany(), cfg = c.config;
+  const today = cap(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+  const ventesJour = c.sales.filter(s => isToday(s.date));
+  if (isAdmin()) {
+    const alertes = c.articles.filter(a => stock(a.id) <= cfg.seuilStock);
+    const benefJour = sum(ventesJour.filter(s => s.mode === 'comptant'), s => s.benefice) + sum(c.beneficesCredit.filter(b => isToday(b.date)), b => b.montant);
+    const recent = c.sales.slice(-5).reverse();
+    main.innerHTML = `
+      ${pageHead('Tableau de bord', today, `<button class="btn btn-ghost" onclick="showInventaire()">${icon('file')} Inventaire</button><button class="btn" onclick="go('ventes')">${icon('cart')} Nouvelle vente</button>`)}
+      ${configBanner()}
+      ${c.demo ? banner('info', "Données d'exemple", "Les articles, le vendeur, les clients et les ventes actuels sont des exemples. Testez librement puis effacez-les quand vous voulez.", `<button class="btn btn-sm btn-ghost" onclick="resetCompanyData()">Effacer les exemples</button>`) : ''}
+      <div class="kpis">
+        ${kpi('Caisse journalière', fmt(cashToday(c)), 'blue', `${ventesJour.length} vente(s) aujourd'hui`)}
+        ${kpi('Caisse globale', fmt(c.cash.global), 'green')}
+        ${kpi('Valeur du stock', fmt(stockValue(c)), 'teal', 'au prix super gros')}
+        ${kpi('Dettes clients', fmt(sum(c.debts, d => d.remaining)), 'red', `${c.debts.filter(d => d.remaining > 0).length} client(s) débiteur(s)`)}
+        ${kpi('Bénéfice du jour', fmt(benefJour), 'green', 'comptant + dettes encaissées')}
+        ${kpi('Alertes stock', alertes.length, alertes.length ? 'amber' : '', `seuil : ${cfg.seuilStock} unité(s)`)}
+      </div>
+      <div class="cols">
+        <section class="card">
+          <div class="card-head"><h3 class="card-title">Alertes stock <span class="count">${alertes.length}</span></h3></div>
+          ${alertes.length ? `<div class="rows">${alertes.map(a => `<div class="row"><span class="row-main"><span class="row-title">${esc(a.nom)}</span><span class="row-sub mono">${esc(a.matricule)}</span></span>${stockPill(a.id)}<button class="btn btn-sm btn-ghost" onclick="go('appro');openApproModal('${a.id}')">Approvisionner</button></div>`).join('')}</div>` : emptyState('Aucune alerte', 'Tous les articles sont au-dessus du seuil.')}
+        </section>
+        <section class="card">
+          <div class="card-head"><h3 class="card-title">Dernières ventes</h3>${c.sales.length ? `<button class="btn btn-sm btn-ghost" onclick="go('ventes')">Tout voir</button>` : ''}</div>
+          ${recent.length ? `<div class="rows">${recent.map(saleRow).join('')}</div>` : emptyState('Aucune vente', 'Les ventes enregistrées apparaîtront ici.')}
+        </section>
+      </div>`;
+  } else {
+    const me = state.currentUser.employeeId;
+    const mine = ventesJour.filter(s => s.vendeurId === me);
+    const perms = c.employees.find(e => e.id === me)?.permissions || {};
+    main.innerHTML = `
+      ${pageHead(`Bonjour, ${esc(empName(c, me))}`, today, `<button class="btn btn-ghost" onclick="showInventaire()">${icon('file')} Inventaire</button>${perms.ventes !== false ? `<button class="btn" onclick="go('ventes')">${icon('cart')} Nouvelle vente</button>` : ''}`)}
+      <div class="kpis">
+        ${kpi("Mes ventes aujourd'hui", fmt(sum(mine, s => s.total)), 'blue', `${mine.length} vente(s)`)}
+        ${kpi('Solde caisse', fmt(c.cash.global), 'green')}
+        ${kpi('Articles en alerte', c.articles.filter(a => stock(a.id) <= cfg.seuilStock).length, 'amber')}
+      </div>
+      <section class="card">
+        <div class="card-head"><h3 class="card-title">Mes ventes du jour</h3></div>
+        ${mine.length ? `<div class="rows">${mine.slice().reverse().map(saleRow).join('')}</div>` : emptyState("Pas encore de vente aujourd'hui", 'Vos ventes apparaîtront ici avec leur facture.')}
+      </section>`;
+  }
+}
+
+// ==================== DOCUMENTS ====================
+const docField = v => v ? esc(v) : '<span class="doc-missing">à renseigner</span>';
+const docHeader = cfg => `<div class="doc-head"><div class="doc-co">${cfg.logo ? `<img src="${cfg.logo}" alt="">` : ''}<div><h3>${esc(cfg.nom)}</h3>${cfg.adresse ? `<p>${esc(cfg.adresse)}</p>` : ''}<p>Tél. ${docField(cfg.tel)} · ${docField(cfg.email)}</p></div></div><div class="doc-legal">NIU ${docField(cfg.niu)}<br>RCCM ${docField(cfg.rccm)}</div></div>`;
+const docFooter = cfg => `<div class="doc-foot">${cfg.slogan ? esc(cfg.slogan) + '<br>' : ''}${esc(cfg.nom)}${cfg.tel ? ' · ' + esc(cfg.tel) : ''}</div>`;
+function showDocument(title, html) {
+  const miss = missingConfig(getCompany().config);
+  let framed = true;
+  try { framed = window.self !== window.top; } catch (e) { framed = true; }
+  const warn = miss.length && isAdmin() ? banner('warn', 'Document incomplet', `Manquant : ${miss.join(', ')}.`, `<button class="btn btn-sm" onclick="go('config')">Compléter</button>`) : '';
+  openModal('docModal', title, `${warn}<div class="doc-sheet" id="docSheet">${html}</div>`,
+    `${framed ? `<span class="foot-note">Pour partager ce document, faites une capture d'écran.</span>` : `<button class="btn btn-ghost" onclick="printDoc()">${icon('file')} Imprimer / PDF</button>`}<button class="btn" onclick="closeModal('docModal')">Fermer</button>`, { wide: true });
+}
+function printDoc() {
+  const pa = $('printArea');
+  pa.innerHTML = `<div class="doc-sheet">${$('docSheet').innerHTML}</div>`;
+  window.print();
+  pa.innerHTML = '';
+}
+function showInvoice(saleId) {
+  const c = getCompany(), cfg = c.config;
+  const s = c.sales.find(x => x.id === saleId); if (!s) return;
+  const num = 'FAC-' + String(s.numero || (c.sales.indexOf(s) + 1)).padStart(5, '0');
+  const html = `${docHeader(cfg)}
+    <div class="doc-title"><h4>Facture ${num}</h4><span>${fdate(s.date)}</span></div>
+    <dl class="doc-meta"><div><dt>Client</dt><dd>${esc(s.client)}</dd></div><div><dt>Règlement</dt><dd>${s.mode === 'comptant' ? 'Comptant' : 'À crédit'}</dd></div><div><dt>Vendeur</dt><dd>${s.vendeurId ? esc(empName(c, s.vendeurId)) : 'Administrateur'}</dd></div></dl>
+    <div class="table-wrap"><table><thead><tr><th>Article</th><th class="r">Qté</th><th class="r">P.U.</th><th class="r">Total</th></tr></thead><tbody>
+      ${s.items.map(i => `<tr><td>${esc(i.nom)}${i.prixType ? `<div class="mono">${PRICE_LABEL[i.prixType] || ''}</div>` : ''}</td><td class="r num">${i.quantite}</td><td class="r num">${fmt(i.prixUnitaire)}</td><td class="r num">${fmt(i.quantite * i.prixUnitaire)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="doc-total"><span>${s.mode === 'comptant' ? 'Total payé' : 'Total dû'}</span><strong class="num">${fmt(s.total)}</strong></div>
+    ${docFooter(cfg)}`;
+  showDocument('Facture ' + num, html);
+}
+function showInventaire() {
+  const c = getCompany(), cfg = c.config, admin = isAdmin();
+  let totalVal = 0;
+  const rows = c.articles.map(a => {
+    const lots = c.lots.filter(l => l.articleId === a.id && l.quantite > 0);
+    const q = sum(lots, l => l.quantite);
+    const pa = q ? sum(lots, l => l.prixAchat * l.quantite) / q : 0;
+    totalVal += pa * q;
+    return `<tr><td class="mono">${esc(a.matricule)}</td><td>${esc(a.nom)}</td><td class="r num">${stock(a.id)}</td><td class="r num">${fmt(a.prixDetail)}</td><td class="r num">${fmt(a.prixGrosVeto)}</td><td class="r num">${fmt(a.prixSuperGros)}</td>${admin ? `<td class="r num">${fmt(pa)}</td>` : ''}</tr>`;
+  }).join('');
+  const html = `${docHeader(cfg)}
+    <div class="doc-title"><h4>Inventaire de stock</h4><span>Généré le ${fdate(now())}</span></div>
+    <div class="table-wrap"><table class="wide"><thead><tr><th>Matricule</th><th>Article</th><th class="r">Qté</th><th class="r">Détail</th><th class="r">Gros Veto</th><th class="r">Super gros</th>${admin ? `<th class="r">Achat moyen</th>` : ''}</tr></thead>
+    <tbody>${rows || `<tr><td colspan="${admin ? 7 : 6}" style="text-align:center;padding:20px">Aucun article</td></tr>`}</tbody></table></div>
+    ${admin ? `<div class="doc-total"><span>Valeur au prix d'achat</span><strong class="num">${fmt(totalVal)}</strong></div>` : ''}
+    ${docFooter(cfg)}`;
+  showDocument('Inventaire de stock', html);
+}
+
+// ==================== SANTÉ FINANCIÈRE ====================
+function renderSante(main) {
+  const c = getCompany();
+  const comptant = c.sales.filter(s => isToday(s.date) && s.mode === 'comptant');
+  const credit = c.beneficesCredit.filter(b => isToday(b.date));
+  const bC = sum(comptant, s => s.benefice), bR = sum(credit, b => b.montant);
+  const lines = [...comptant.map(s => ({ date: s.date, client: s.client, type: 'Comptant', m: s.benefice || 0 })), ...credit.map(b => ({ date: b.date, client: b.client, type: 'Crédit', m: b.montant }))].sort(byDate).reverse();
+  main.innerHTML = `
+    ${pageHead('Santé financière', "Bénéfices réalisés aujourd'hui")}
+    <div class="kpis">
+      ${kpi('Bénéfice du jour', fmt(bC + bR), 'green')}
+      ${kpi('Dont ventes comptant', fmt(bC), 'blue')}
+      ${kpi('Dont dettes encaissées', fmt(bR), 'teal')}
+      ${kpi("Chiffre d'affaires du jour", fmt(sum(c.sales.filter(s => isToday(s.date)), s => s.total)), 'amber', 'comptant + crédit')}
+    </div>
+    <section class="card">
+      <div class="card-head"><h3 class="card-title">Détail des bénéfices <span class="count">${lines.length}</span></h3><button class="btn btn-sm btn-ghost" id="btnDetails" onclick="toggleSanteDetails()">Voir les détails</button></div>
+      <p class="muted" style="font-size:.85rem">Le bénéfice d'une vente à crédit est compté le jour où le client rembourse, au prorata du montant payé.</p>
+      <div id="santeDetails" hidden style="margin-top:12px">
+        <div class="table-wrap"><table class="wide"><thead><tr><th>Date</th><th>Client</th><th>Type</th><th class="r">Bénéfice</th></tr></thead><tbody>
+          ${lines.map(l => `<tr><td>${fdate(l.date)}</td><td>${esc(l.client)}</td><td>${pill(l.type, l.type === 'Comptant' ? 'good' : 'info')}</td><td class="r num amt-in">${fmt(l.m)}</td></tr>`).join('') || `<tr><td colspan="4">${emptyState("Aucun bénéfice aujourd'hui")}</td></tr>`}
+        </tbody></table></div>
+      </div>
+    </section>`;
+}
+function toggleSanteDetails() {
+  const el = $('santeDetails');
+  el.hidden = !el.hidden;
+  $('btnDetails').textContent = el.hidden ? 'Voir les détails' : 'Masquer les détails';
+}
+
+// ==================== MES ENTREPRISES ====================
+function renderEntreprises(main) {
+  const cos = state.companies.filter(c => c.config);
+  cos.forEach(ensureCompanyData);
+  main.innerHTML = `
+    ${pageHead('Mes entreprises', `${cos.length} entreprise(s) gérée(s)`, `<button class="btn" onclick="createNewCompany()">${icon('plus')} Nouvelle entreprise</button>`)}
+    <div class="kpis">
+      ${kpi('Caisse journalière (toutes)', fmt(sum(cos, co => cashToday(co))), 'blue')}
+      ${kpi('Caisse globale (toutes)', fmt(sum(cos, co => co.cash.global)), 'green')}
+      ${kpi('Valeur totale du stock', fmt(sum(cos, co => stockValue(co))), 'teal')}
+    </div>
+    <div class="co-grid">${cos.map(co => {
+      const active = co.id === state.currentCompanyId;
+      return `<section class="card co-card${active ? ' active' : ''}">
+        <div class="card-head"><div class="co-name"><span class="mark">${co.config.logo ? `<img src="${co.config.logo}" alt="">` : esc(initials(co.config.nom))}</span><strong>${esc(co.config.nom)}</strong></div>${active ? pill('Active', 'good') : `<button class="btn btn-sm" onclick="loginToCompany('${co.id}','admin')">Ouvrir</button>`}</div>
+        <dl class="stats"><div><dt>Caisse du jour</dt><dd class="num">${fmt(cashToday(co))}</dd></div><div><dt>Caisse globale</dt><dd class="num">${fmt(co.cash.global)}</dd></div><div><dt>Stock</dt><dd class="num">${fmt(stockValue(co))}</dd></div></dl>
+        ${missingConfig(co.config).length ? `<p class="sub warn-text">${icon('alert')} Configuration incomplète</p>` : ''}
+      </section>`;
+    }).join('')}</div>`;
+}
+
+// ==================== ARTICLES ====================
+function renderArticles(main) {
+  const c = getCompany();
+  main.innerHTML = `
+    ${pageHead('Articles', `${c.articles.length} article(s) au catalogue`, `<button class="btn btn-ghost" onclick="showInventaire()">${icon('file')} Inventaire</button><button class="btn" onclick="openArticleModal()">${icon('plus')} Nouvel article</button>`)}
+    <section class="card">
+      <input class="search" id="artSearch" type="search" placeholder="Rechercher par nom ou matricule…" oninput="renderArticleRows()" aria-label="Rechercher un article">
+      <div class="table-wrap"><table class="wide"><thead><tr><th>Matricule</th><th>Article</th><th class="r">Stock</th><th class="r">Détail</th><th class="r">Gros Veto</th><th class="r">Super gros</th><th></th></tr></thead><tbody id="artRows"></tbody></table></div>
+    </section>`;
+  renderArticleRows();
+}
+function renderArticleRows() {
+  const c = getCompany();
+  const q = ($('artSearch')?.value || '').toLowerCase().trim();
+  const list = c.articles.filter(a => !q || a.nom.toLowerCase().includes(q) || a.matricule.toLowerCase().includes(q));
+  $('artRows').innerHTML = list.map(a => `<tr>
+      <td class="mono">${esc(a.matricule)}</td><td><strong>${esc(a.nom)}</strong></td><td class="r">${stockPill(a.id)}</td>
+      <td class="r num">${fmt(a.prixDetail)}</td><td class="r num">${fmt(a.prixGrosVeto)}</td><td class="r num">${fmt(a.prixSuperGros)}</td>
+      <td><div class="t-actions"><button class="icon-btn" aria-label="Modifier ${esc(a.nom)}" title="Modifier" onclick="openArticleModal('${a.id}')">${icon('edit')}</button><button class="icon-btn danger" aria-label="Supprimer ${esc(a.nom)}" title="Supprimer" onclick="deleteArticle('${a.id}')">${icon('trash')}</button></div></td>
+    </tr>`).join('') || `<tr><td colspan="7">${q ? emptyState('Aucun résultat', 'Essayez un autre nom ou matricule.') : emptyState('Aucun article', 'Créez votre premier article, puis approvisionnez-le pour fixer ses prix.', `<button class="btn" onclick="openArticleModal()">${icon('plus')} Créer un article</button>`)}</td></tr>`;
+}
+function openArticleModal(id) {
+  const a = id ? getCompany().articles.find(x => x.id === id) : null;
+  openModal('artModal', a ? "Modifier l'article" : 'Nouvel article',
+    `<div class="field"><label for="artNom">Nom de l'article</label><input id="artNom" value="${esc(a?.nom || '')}" placeholder="Ex. Ivermectine 1 % – flacon 50 ml" onkeydown="if(event.key==='Enter')saveArticle('${id || ''}')"></div>
+     <p class="muted" style="font-size:.85rem">Les prix se fixent lors de l'approvisionnement.</p>`,
+    `<button class="btn btn-ghost" onclick="closeModal('artModal')">Annuler</button><button class="btn" onclick="saveArticle('${id || ''}')">Enregistrer</button>`);
+}
+function saveArticle(id) {
+  const c = getCompany();
+  const nom = $('artNom').value.trim();
+  if (!nom) { $('artNom').focus(); return toast("Indiquez le nom de l'article.", 'err'); }
+  if (id) c.articles.find(a => a.id === id).nom = nom;
+  else c.articles.push({ id: uid('a'), matricule: 'ARTICLE' + String(state.nextIds.art++).padStart(4, '0'), nom, prixDetail: 0, prixGrosVeto: 0, prixSuperGros: 0 });
+  save(); closeModal('artModal'); showSection(currentSection);
+  toast(id ? 'Article modifié.' : 'Article créé. Approvisionnez-le pour fixer ses prix.');
+}
+async function deleteArticle(id) {
+  const c = getCompany(); const a = c.articles.find(x => x.id === id);
+  if (stock(id) > 0) return toast(`Impossible : il reste ${stock(id)} unité(s) en stock.`, 'err');
+  if (!await confirmDialog(`Supprimer l'article <strong>${esc(a.nom)}</strong> ?`, 'Supprimer', true)) return;
+  c.articles = c.articles.filter(x => x.id !== id);
+  save(); showSection('articles'); toast('Article supprimé.');
+}
+
+// ==================== APPROVISIONNEMENT ====================
+function renderAppro(main) {
+  const c = getCompany();
+  const recent = c.lots.slice().sort(byDate).reverse().slice(0, 8);
+  main.innerHTML = `
+    ${pageHead('Approvisionnement', 'Entrées de stock et fixation des prix', `<button class="btn btn-ghost" onclick="showInventaire()">${icon('file')} Inventaire</button>`)}
+    <section class="card">
+      <input type="search" class="search" id="approSearch" placeholder="Rechercher un article par nom ou matricule…" oninput="renderApproList()" aria-label="Rechercher un article">
+      <div id="approList"></div>
+    </section>
+    <section class="card">
+      <h3 class="card-title">Derniers approvisionnements</h3>
+      ${recent.length ? `<div class="table-wrap"><table class="wide"><thead><tr><th>Date</th><th>Article</th><th class="r">Qté reçue</th><th class="r">Prix d'achat</th><th class="r">Restant</th></tr></thead><tbody>
+        ${recent.map(l => `<tr><td>${fdate(l.date)}</td><td>${esc(c.articles.find(a => a.id === l.articleId)?.nom || 'Article supprimé')}</td><td class="r num">${l.quantiteInitiale ?? '—'}</td><td class="r num">${fmt(l.prixAchat)}</td><td class="r num">${l.quantite}</td></tr>`).join('')}
+      </tbody></table></div>` : emptyState('Aucun approvisionnement', 'Choisissez un article ci-dessus puis « Approvisionner ».')}
+    </section>`;
+  renderApproList();
+}
+function renderApproList() {
+  const c = getCompany();
+  const q = ($('approSearch')?.value || '').toLowerCase().trim();
+  let list = c.articles.filter(a => !q || a.nom.toLowerCase().includes(q) || a.matricule.toLowerCase().includes(q));
+  const total = list.length;
+  if (!q) list = list.slice(0, 8);
+  const el = $('approList');
+  if (!list.length) {
+    el.innerHTML = q ? emptyState('Aucun article trouvé', 'Essayez un autre nom ou matricule.') : emptyState('Aucun article', "Créez d'abord un article pour pouvoir l'approvisionner.", `<button class="btn" onclick="go('articles');openArticleModal()">${icon('plus')} Créer un article</button>`);
+    return;
+  }
+  el.innerHTML = `<div class="table-wrap"><table class="wide"><thead><tr><th>Matricule</th><th>Article</th><th class="r">Stock</th><th class="r">Détail</th><th class="r">Gros Veto</th><th class="r">Super gros</th><th></th></tr></thead><tbody>
+    ${list.map(a => `<tr><td class="mono">${esc(a.matricule)}</td><td><strong>${esc(a.nom)}</strong></td><td class="r">${stockPill(a.id)}</td><td class="r num">${fmt(a.prixDetail)}</td><td class="r num">${fmt(a.prixGrosVeto)}</td><td class="r num">${fmt(a.prixSuperGros)}</td>
+      <td><div class="t-actions"><button class="btn btn-sm btn-ghost" onclick="openEditPricesModal('${a.id}')">Prix</button><button class="btn btn-sm" onclick="openApproModal('${a.id}')">Approvisionner</button></div></td></tr>`).join('')}
+  </tbody></table></div>
+  ${!q && total > 8 ? `<p class="sub" style="margin-top:10px">8 articles affichés sur ${total}. Utilisez la recherche pour trouver les autres.</p>` : ''}`;
+}
+function checkRule(p, withPA) {
+  const v = k => +($(p + k)?.value) || 0;
+  const pa = withPA ? v('PA') : 0;
+  const ok = v('PD') > v('PGV') && v('PGV') > v('PSG') && v('PSG') > pa;
+  const el = $(p + 'Rule');
+  if (el) {
+    el.className = 'rule ' + (ok ? 'ok' : 'ko');
+    el.innerHTML = ok
+      ? `${icon('check')}<span>Prix cohérents${withPA ? ` · marge au détail : ${fmt(v('PD') - pa)}` : ''}</span>`
+      : `${icon('alert')}<span>Règle : Détail &gt; Gros Veto &gt; Super gros${withPA ? " &gt; Prix d'achat" : ' &gt; 0'}</span>`;
+  }
+  return ok;
+}
+const priceInput = (id, label, val, p, withPA) => `<div class="field"><label for="${id}">${label}</label><input type="number" id="${id}" value="${val}" min="0" inputmode="numeric" oninput="checkRule('${p}',${withPA})"></div>`;
+function openApproModal(articleId) {
+  const c = getCompany(); const a = c.articles.find(x => x.id === articleId); if (!a) return;
+  const lastPA = c.lots.filter(l => l.articleId === articleId).sort(byDate).pop()?.prixAchat || 0;
+  openModal('approModal', `Approvisionner · ${esc(a.nom)}`, `
+    <div class="grid2">
+      <div class="field"><label for="apQty">Quantité reçue</label><input type="number" id="apQty" value="1" min="1" inputmode="numeric"></div>
+      ${priceInput('apPA', "Prix d'achat unitaire", lastPA, 'ap', true)}
+      ${priceInput('apPD', 'Prix Détail', a.prixDetail || 0, 'ap', true)}
+      ${priceInput('apPGV', 'Prix Gros Veto', a.prixGrosVeto || 0, 'ap', true)}
+      ${priceInput('apPSG', 'Prix Super gros', a.prixSuperGros || 0, 'ap', true)}
+    </div>
+    <div id="apRule"></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal('approModal')">Annuler</button><button class="btn" onclick="saveAppro('${articleId}')">Enregistrer l'entrée</button>`);
+  checkRule('ap', true);
+}
+function saveAppro(articleId) {
+  const c = getCompany();
+  const v = id => +$(id).value || 0;
+  const qty = Math.floor(v('apQty'));
+  if (qty <= 0) return toast('La quantité doit être au moins 1.', 'err');
+  if (!checkRule('ap', true)) return toast("Vérifiez les prix : Détail > Gros Veto > Super gros > Prix d'achat.", 'err');
+  const lot = { id: uid('l'), articleId, quantite: qty, quantiteInitiale: qty, prixAchat: v('apPA'), prixDetail: v('apPD'), prixGrosVeto: v('apPGV'), prixSuperGros: v('apPSG'), date: now() };
+  c.lots.push(lot);
+  Object.assign(c.articles.find(a => a.id === articleId), { prixDetail: lot.prixDetail, prixGrosVeto: lot.prixGrosVeto, prixSuperGros: lot.prixSuperGros });
+  save(); closeModal('approModal'); showSection(currentSection);
+  toast(`${qty} unité(s) ajoutée(s) au stock.`);
+}
+function openEditPricesModal(articleId) {
+  const a = getCompany().articles.find(x => x.id === articleId); if (!a) return;
+  openModal('editPriceModal', `Prix · ${esc(a.nom)}`, `
+    <div class="grid2">
+      ${priceInput('edPD', 'Prix Détail', a.prixDetail || 0, 'ed', false)}
+      ${priceInput('edPGV', 'Prix Gros Veto', a.prixGrosVeto || 0, 'ed', false)}
+      ${priceInput('edPSG', 'Prix Super gros', a.prixSuperGros || 0, 'ed', false)}
+    </div>
+    <div id="edRule"></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal('editPriceModal')">Annuler</button><button class="btn" onclick="saveEditPrices('${articleId}')">Enregistrer</button>`);
+  checkRule('ed', false);
+}
+function saveEditPrices(articleId) {
+  if (!checkRule('ed', false)) return toast('Ordre obligatoire : Détail > Gros Veto > Super gros.', 'err');
+  const v = id => +$(id).value || 0;
+  Object.assign(getCompany().articles.find(a => a.id === articleId), { prixDetail: v('edPD'), prixGrosVeto: v('edPGV'), prixSuperGros: v('edPSG') });
+  save(); closeModal('editPriceModal'); showSection(currentSection);
+  toast('Prix mis à jour.');
+}
+
+// ==================== VENTES ====================
+function makeLine(c, articleId, qty, prixType) {
+  const art = c.articles.find(a => a.id === articleId);
+  return { articleId, nom: art.nom, quantite: qty, prixType, prixUnitaire: Number(art[prixType]) || 0 };
+}
+function recordSale(c, lines, client, mode, date = now()) {
+  let total = 0, benefice = 0;
+  lines.forEach(item => {
+    total += item.quantite * item.prixUnitaire;
+    let reste = item.quantite;
+    c.lots.filter(l => l.articleId === item.articleId && l.quantite > 0).sort(byDate).forEach(lot => {
+      if (reste <= 0) return;
+      const take = Math.min(lot.quantite, reste);
+      lot.quantite -= take; reste -= take;
+      benefice += take * (item.prixUnitaire - (Number(lot.prixAchat) || 0));
+    });
+  });
+  const sale = { id: uid('s'), numero: c.sales.length + 1, date, client, mode, items: lines.map(l => ({ ...l })), total, benefice, vendeurId: state.currentUser?.type === 'vendeur' ? state.currentUser.employeeId : null };
+  c.sales.push(sale);
+  if (mode === 'comptant') addMovement(c, 'entree', total, `Vente comptant – ${client}`, date);
+  else {
+    const d = c.debts.find(x => x.client.toLowerCase() === client.toLowerCase());
+    if (d) { d.remaining += total; d.total += total; d.lastSale = date; d.nbVentes = (d.nbVentes || 0) + 1; d.pendingBenefice = (d.pendingBenefice || 0) + benefice; }
+    else c.debts.push({ client, remaining: total, total, lastSale: date, nbVentes: 1, payments: [], pendingBenefice: benefice });
+  }
+  return sale;
+}
+function renderVentes(main) {
+  const c = getCompany();
+  const clients = [...new Set([...c.sales.map(s => s.client), ...c.debts.map(d => d.client)])];
+  main.innerHTML = `
+    ${pageHead('Ventes', 'Point de vente et historique')}
+    <div class="pos-grid">
+      <section class="card">
+        <h3 class="card-title">Ajouter un article</h3>
+        ${c.articles.length ? `
+          <div class="grid2">
+            <div class="field span-2"><label for="vArt">Article</label><select id="vArt" onchange="updatePriceDisplay()">${c.articles.map(a => `<option value="${a.id}">${esc(a.nom)} — stock ${stock(a.id)}</option>`).join('')}</select></div>
+            <div class="field"><label for="vPrixType">Type de prix</label><select id="vPrixType" onchange="updatePriceDisplay()">${Object.entries(PRICE_LABEL).map(([k, l]) => `<option value="${k}">Prix ${l}</option>`).join('')}</select></div>
+            <div class="field"><label for="vQty">Quantité</label><input type="number" id="vQty" value="1" min="1" inputmode="numeric"></div>
+          </div>
+          <div class="price-line"><span>Prix unitaire</span><strong id="priceValueDisplay" class="num">—</strong></div>
+          <button class="btn btn-ghost btn-block" onclick="addToCart()">${icon('plus')} Ajouter au panier</button>`
+        : emptyState('Aucun article à vendre', isAdmin() ? 'Créez un article puis approvisionnez-le.' : "Demandez à l'administrateur d'ajouter des articles.", isAdmin() ? `<button class="btn" onclick="go('articles');openArticleModal()">${icon('plus')} Créer un article</button>` : '')}
+      </section>
+      <section class="card">
+        <h3 class="card-title">Panier <span class="count" id="cartCount" hidden></span></h3>
+        <div id="cartArea"></div>
+        <div class="field"><label for="vClient">Client</label><input id="vClient" list="clientsList" placeholder="Nom du client" autocomplete="off"><datalist id="clientsList">${clients.map(n => `<option value="${esc(n)}">`).join('')}</datalist></div>
+        <div class="total-line"><span>Total</span><strong id="cartTotal" class="num">0</strong></div>
+        <div class="pay-actions"><button class="btn btn-good" onclick="finalizeSale('comptant')">Encaisser comptant</button><button class="btn btn-warn" onclick="finalizeSale('credit')">Vendre à crédit</button></div>
+      </section>
+    </div>
+    <section class="card"><h3 class="card-title">Historique des ventes <span class="count">${c.sales.length}</span></h3><div id="salesHistory"></div></section>`;
+  updatePriceDisplay(); renderCart(); renderSalesHistory();
+}
+function updatePriceDisplay() {
+  const el = $('priceValueDisplay'); if (!el) return;
+  const art = getCompany().articles.find(a => a.id === $('vArt').value);
+  const val = art ? Number(art[$('vPrixType').value]) || 0 : 0;
+  el.textContent = val ? fmt(val) : 'Prix non défini';
+}
+function addToCart() {
+  const c = getCompany();
+  const artId = $('vArt').value, prixType = $('vPrixType').value;
+  const qty = Math.floor(+$('vQty').value);
+  if (!qty || qty < 1) return toast('La quantité doit être au moins 1.', 'err');
+  const line = makeLine(c, artId, qty, prixType);
+  if (!line.prixUnitaire) return toast("Cet article n'a pas encore de prix. Approvisionnez-le d'abord.", 'err');
+  const dispo = stock(artId) - sum(cart.filter(i => i.articleId === artId), i => i.quantite);
+  if (qty > dispo) return toast(`Stock insuffisant : ${Math.max(0, dispo)} unité(s) disponible(s).`, 'err');
+  const same = cart.find(i => i.articleId === artId && i.prixType === prixType);
+  if (same) same.quantite += qty; else cart.push(line);
+  $('vQty').value = 1;
+  renderCart();
+}
+function removeFromCart(i) { cart.splice(i, 1); renderCart(); }
+function renderCart() {
+  const el = $('cartArea'); if (!el) return;
+  $('cartTotal').textContent = fmt(sum(cart, i => i.quantite * i.prixUnitaire));
+  $('cartCount').textContent = cart.length;
+  $('cartCount').hidden = !cart.length;
+  el.innerHTML = cart.length
+    ? cart.map((it, i) => `<div class="cart-item"><span class="row-main"><span class="row-title">${esc(it.nom)}</span><span class="row-sub">${it.quantite} × ${fmt(it.prixUnitaire)} · ${PRICE_LABEL[it.prixType] || ''}</span></span><strong class="num">${fmt(it.quantite * it.prixUnitaire)}</strong><button class="icon-btn danger" aria-label="Retirer du panier" onclick="removeFromCart(${i})">${icon('x')}</button></div>`).join('')
+    : `<div class="cart-empty">Le panier est vide. Choisissez un article puis « Ajouter au panier ».</div>`;
+}
+function finalizeSale(mode) {
+  const c = getCompany();
+  const client = $('vClient').value.trim();
+  if (!cart.length) return toast('Ajoutez au moins un article au panier.', 'err');
+  if (!client) { $('vClient').focus(); return toast(mode === 'credit' ? 'Indiquez le client : il faut savoir qui doit payer.' : 'Indiquez le nom du client.', 'err'); }
+  for (const id of new Set(cart.map(i => i.articleId))) {
+    if (sum(cart.filter(i => i.articleId === id), i => i.quantite) > stock(id)) return toast('Le stock a changé : retirez un article du panier.', 'err');
+  }
+  const sale = recordSale(c, cart, client, mode);
+  cart = [];
+  save(); showSection('ventes');
+  toast(mode === 'comptant' ? `Vente encaissée : ${fmt(sale.total)}.` : `Vente à crédit enregistrée pour ${client}.`);
+  showInvoice(sale.id);
+}
+function renderSalesHistory() {
+  const c = getCompany(); const el = $('salesHistory'); if (!el) return;
+  el.innerHTML = c.sales.length ? `<div class="table-wrap"><table class="wide"><thead><tr><th>Date</th><th>Client</th><th>Mode</th><th class="r">Total</th>${isAdmin() ? '<th class="r">Bénéfice</th>' : ''}<th></th></tr></thead><tbody>
+    ${c.sales.slice().reverse().map(s => `<tr><td>${fdate(s.date)}</td><td><strong>${esc(s.client)}</strong></td><td>${pill(s.mode === 'comptant' ? 'Comptant' : 'Crédit', s.mode === 'comptant' ? 'good' : 'warn')}</td><td class="r num">${fmt(s.total)}</td>${isAdmin() ? `<td class="r num">${fmt(s.benefice)}</td>` : ''}<td><div class="t-actions"><button class="btn btn-sm btn-ghost" onclick="showInvoice('${s.id}')">${icon('file')} Facture</button></div></td></tr>`).join('')}
+  </tbody></table></div>` : emptyState('Aucune vente', 'Ajoutez un article au panier puis encaissez.');
+}
+
+// ==================== CAISSE ====================
+function renderCaisse(main) {
+  const c = getCompany(); const today = cashToday(c);
+  main.innerHTML = `
+    ${pageHead('Caisse', "Entrées et sorties d'argent", `<button class="btn" onclick="openCashOut()">${icon('wallet')} Retirer de l'argent</button>`)}
+    <div class="kpis">
+      ${kpi('Caisse globale', fmt(c.cash.global), 'green')}
+      ${kpi('Caisse journalière', (today > 0 ? '+' : '') + fmt(today), 'blue', 'entrées moins sorties du jour')}
+    </div>
+    <section class="card">
+      <h3 class="card-title">Mouvements <span class="count">${c.cash.movements.length}</span></h3>
+      ${c.cash.movements.length ? `<div class="table-wrap"><table class="wide"><thead><tr><th>Date</th><th>Libellé</th><th>Type</th><th class="r">Montant</th><th class="r">Solde après</th></tr></thead><tbody>
+        ${c.cash.movements.slice(0, 50).map(m => `<tr><td>${fdate(m.date)}</td><td>${esc(m.description)}</td><td>${pill(m.type === 'entree' ? 'Entrée' : 'Sortie', m.type === 'entree' ? 'good' : 'bad')}</td><td class="r num ${m.type === 'entree' ? 'amt-in' : 'amt-out'}">${m.type === 'entree' ? '+' : '−'}${fmt(m.montant)}</td><td class="r num">${fmt(m.soldeApres)}</td></tr>`).join('')}
+      </tbody></table></div>` : emptyState('Aucun mouvement', 'Les ventes comptant, remboursements, dépenses et salaires apparaîtront ici.')}
+    </section>`;
+}
+async function openCashOut() {
+  const c = getCompany();
+  if (c.cash.global <= 0) return toast('La caisse est vide.', 'err');
+  const m = await amountDialog("Retirer de l'argent", `Solde disponible : ${fmt(c.cash.global)}`, c.cash.global);
+  if (!m) return;
+  addMovement(c, 'sortie', m, 'Retrait manuel');
+  save(); showSection('caisse'); toast(`Retrait de ${fmt(m)} enregistré.`);
+}
+
+// ==================== DETTES ====================
+function renderDettes(main) {
+  const c = getCompany();
+  main.innerHTML = `
+    ${pageHead('Dettes clients', 'Ventes à crédit en attente de paiement')}
+    <div class="kpis">
+      ${kpi('Total dû', fmt(sum(c.debts, d => d.remaining)), 'red')}
+      ${kpi('Clients débiteurs', c.debts.filter(d => d.remaining > 0).length, 'amber')}
+      ${kpi('Bénéfice en attente', fmt(sum(c.debts, d => d.pendingBenefice)), 'teal', 'compté au remboursement')}
+    </div>
+    <section class="card">
+      ${c.debts.length ? `<div class="table-wrap"><table class="wide"><thead><tr><th>Client</th><th class="r">Total acheté</th><th class="r">Reste à payer</th><th>Statut</th><th></th></tr></thead><tbody>
+        ${c.debts.map((d, i) => `<tr><td><strong>${esc(d.client)}</strong><div class="sub">${d.nbVentes || 1} vente(s) · dernière le ${fdate(d.lastSale)}</div></td><td class="r num">${fmt(d.total)}</td><td class="r num ${d.remaining > 0 ? 'amt-out' : ''}">${fmt(d.remaining)}</td><td>${d.remaining > 0 ? pill('À encaisser', 'warn') : pill('Soldée', 'good')}</td>
+          <td><div class="t-actions">${d.remaining > 0 ? `<button class="btn btn-sm btn-ghost" onclick="payDebtPartial(${i})">Paiement partiel</button><button class="btn btn-sm btn-good" onclick="payDebtFull(${i})">Tout encaisser</button>` : ''}</div></td></tr>`).join('')}
+      </tbody></table></div>` : emptyState('Aucune dette', 'Les ventes à crédit apparaîtront ici.')}
+    </section>`;
+}
+function applyDebtPayment(c, d, amount) {
+  const benef = amount >= d.remaining ? (d.pendingBenefice || 0) : Math.round((d.pendingBenefice || 0) * amount / d.remaining);
+  d.remaining = Math.max(0, d.remaining - amount);
+  d.pendingBenefice = d.remaining ? (d.pendingBenefice || 0) - benef : 0;
+  (d.payments = d.payments || []).push({ date: now(), montant: amount });
+  addMovement(c, 'entree', amount, `${d.remaining ? 'Remboursement partiel' : 'Remboursement dette'} – ${d.client}`);
+  if (benef > 0) c.beneficesCredit.push({ date: now(), client: d.client, montant: benef });
+  return benef;
+}
+async function payDebtFull(i) {
+  const c = getCompany(); const d = c.debts[i]; if (!d || d.remaining <= 0) return;
+  if (!await confirmDialog(`Encaisser <strong>${fmt(d.remaining)}</strong> de ${esc(d.client)} et solder sa dette ?`, 'Encaisser')) return;
+  const benef = applyDebtPayment(c, d, d.remaining);
+  save(); showSection('dettes');
+  toast(benef > 0 ? `Dette soldée. Bénéfice de ${fmt(benef)} enregistré.` : 'Dette soldée.');
+}
+async function payDebtPartial(i) {
+  const c = getCompany(); const d = c.debts[i]; if (!d || d.remaining <= 0) return;
+  const amount = await amountDialog(`Paiement de ${esc(d.client)}`, `Reste à payer : ${fmt(d.remaining)}`, d.remaining);
+  if (!amount) return;
+  applyDebtPayment(c, d, amount);
+  save(); showSection('dettes');
+  toast(d.remaining ? `Paiement enregistré. Reste ${fmt(d.remaining)}.` : 'Dette soldée.');
+}
+
+// ==================== DÉPENSES ====================
+function renderDepenses(main) {
+  const c = getCompany();
+  main.innerHTML = `
+    ${pageHead('Dépenses', `Au-delà de ${fmt(c.config.seuilDepense)}, une dépense doit être approuvée par l'administrateur.`, `<button class="btn" onclick="openExpenseModal()">${icon('plus')} Nouvelle dépense</button>`)}
+    <section class="card">
+      ${c.expenses.length ? `<div class="table-wrap"><table class="wide"><thead><tr><th>Date</th><th>Dépense</th><th class="r">Montant</th><th>Statut</th><th></th></tr></thead><tbody>
+        ${c.expenses.map(e => { const [label, tone] = EXP_STATUS[e.status] || [e.status, 'neutral']; return `<tr><td>${fdate(e.createdAt)}</td><td><strong>${esc(e.nom)}</strong></td><td class="r num">${fmt(e.montant)}</td><td>${pill(label, tone)}</td>
+          <td><div class="t-actions">${e.status === 'en_attente' && isAdmin() ? `<button class="btn btn-sm btn-good" onclick="approveExpense('${e.id}')">Approuver</button>` : ''}${e.status === 'a_payer' ? `<button class="btn btn-sm" onclick="payExpense('${e.id}')">Payer</button>` : ''}</div></td></tr>`; }).join('')}
+      </tbody></table></div>` : emptyState('Aucune dépense', 'Enregistrez loyer, transport, électricité…', `<button class="btn" onclick="openExpenseModal()">${icon('plus')} Nouvelle dépense</button>`)}
+    </section>`;
+}
+function openExpenseModal() {
+  openModal('expModal', 'Nouvelle dépense', `
+    <div class="grid2">
+      <div class="field span-2"><label for="expNom">Libellé</label><input id="expNom" placeholder="Ex. Transport marchandises Douala–Yaoundé"></div>
+      <div class="field span-2"><label for="expMontant">Montant (${esc(dev())})</label><input type="number" id="expMontant" min="1" inputmode="numeric"></div>
+    </div>
+    <p class="muted" style="font-size:.85rem">Seuil d'approbation : ${fmt(getCompany().config.seuilDepense)}.</p>`,
+    `<button class="btn btn-ghost" onclick="closeModal('expModal')">Annuler</button><button class="btn" onclick="saveExpense()">Enregistrer</button>`);
+}
+function saveExpense() {
+  const c = getCompany();
+  const nom = $('expNom').value.trim(), montant = +$('expMontant').value || 0;
+  if (!nom) { $('expNom').focus(); return toast('Indiquez le libellé de la dépense.', 'err'); }
+  if (montant <= 0) { $('expMontant').focus(); return toast('Indiquez un montant supérieur à 0.', 'err'); }
+  const needsApproval = montant > c.config.seuilDepense;
+  c.expenses.unshift({ id: uid('e'), nom, montant, status: needsApproval ? 'en_attente' : 'a_payer', createdAt: now() });
+  save(); closeModal('expModal'); showSection('depenses');
+  toast(needsApproval ? "Dépense enregistrée. Elle attend l'approbation de l'administrateur." : 'Dépense enregistrée, prête à être payée.');
+}
+function approveExpense(id) {
+  const e = getCompany().expenses.find(x => x.id === id);
+  if (e) { e.status = 'a_payer'; save(); showSection('depenses'); toast('Dépense approuvée.'); }
+}
+async function payExpense(id) {
+  const c = getCompany(); const e = c.expenses.find(x => x.id === id); if (!e) return;
+  if (c.cash.global < e.montant) return toast(`Solde de caisse insuffisant (${fmt(c.cash.global)} disponible).`, 'err');
+  if (!await confirmDialog(`Payer <strong>${fmt(e.montant)}</strong> pour « ${esc(e.nom)} » depuis la caisse ?`, 'Payer')) return;
+  addMovement(c, 'sortie', e.montant, `Dépense – ${e.nom}`);
+  e.status = 'payee';
+  save(); showSection('depenses'); toast('Dépense payée.');
+}
+
+// ==================== EMPLOYÉS ====================
+function renderEmployes(main) {
+  const c = getCompany();
+  main.innerHTML = `
+    ${pageHead('Employés', `Masse salariale : ${fmt(sum(c.employees, e => e.salaire))} par mois`, `<button class="btn" onclick="openEmpModal()">${icon('plus')} Nouvel employé</button>`)}
+    ${banner('info', '', 'Chaque vendeur a son propre compte : cliquez sur <strong>Déconnexion</strong> puis choisissez son nom pour vendre à sa place.')}
+    <section class="card">
+      ${c.employees.length ? `<div class="table-wrap"><table class="wide"><thead><tr><th>Matricule</th><th>Nom</th><th>Fonction</th><th class="r">Salaire</th><th>Dernier paiement</th><th></th></tr></thead><tbody>
+        ${c.employees.map(e => { const last = (e.paiements || []).slice(-1)[0]; return `<tr><td class="mono">${esc(e.matricule)}</td><td><strong>${esc(e.nom)} ${esc(e.prenom || '')}</strong></td><td>${pill(esc(e.fonction), e.fonction === 'Vendeur' ? 'info' : 'neutral')}</td><td class="r num">${fmt(e.salaire)}</td><td>${last ? fdate(last.date) : '<span class="muted">—</span>'}</td>
+          <td><div class="t-actions"><button class="btn btn-sm btn-good" onclick="paySalary('${e.id}')">Payer le salaire</button></div></td></tr>`; }).join('')}
+      </tbody></table></div>` : emptyState('Aucun employé', "Ajoutez un vendeur pour qu'il puisse se connecter et vendre.", `<button class="btn" onclick="openEmpModal()">${icon('plus')} Nouvel employé</button>`)}
+    </section>`;
+}
+function openEmpModal() {
+  openModal('empModal', 'Nouvel employé', `
+    <div class="grid2">
+      <div class="field"><label for="empNom">Nom</label><input id="empNom"></div>
+      <div class="field"><label for="empPrenom">Prénom</label><input id="empPrenom"></div>
+      <div class="field"><label for="empFonction">Fonction</label><select id="empFonction"><option>Vendeur</option><option>Caissier</option><option>Magasinier</option></select></div>
+      <div class="field"><label for="empSalaire">Salaire mensuel (${esc(dev())})</label><input type="number" id="empSalaire" value="0" min="0" inputmode="numeric"></div>
+    </div>
+    <div class="field"><label>Accès du vendeur</label><div class="checks-inline">
+      <label class="check" for="permV"><input type="checkbox" id="permV" checked>Ventes</label>
+      <label class="check" for="permD"><input type="checkbox" id="permD" checked>Dépenses</label>
+      <label class="check" for="permP"><input type="checkbox" id="permP" checked>Publications</label>
+    </div></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal('empModal')">Annuler</button><button class="btn" onclick="saveEmployee()">Enregistrer</button>`);
+}
+function saveEmployee() {
+  const c = getCompany();
+  const nom = $('empNom').value.trim();
+  if (!nom) { $('empNom').focus(); return toast("Indiquez le nom de l'employé.", 'err'); }
+  c.employees.push({
+    id: uid('emp'), matricule: empMatricule(c), nom, prenom: $('empPrenom').value.trim(),
+    fonction: $('empFonction').value, salaire: Math.max(0, +$('empSalaire').value || 0),
+    permissions: { ventes: $('permV').checked, depenses: $('permD').checked, publications: $('permP').checked }, paiements: []
+  });
+  save(); closeModal('empModal'); showSection('employes');
+  toast('Employé ajouté.');
+}
+async function paySalary(id) {
+  const c = getCompany(); const e = c.employees.find(x => x.id === id); if (!e) return;
+  if (!e.salaire) return toast("Aucun salaire n'est défini pour cet employé.", 'err');
+  if (c.cash.global < e.salaire) return toast(`Solde de caisse insuffisant (${fmt(c.cash.global)} disponible).`, 'err');
+  if (!await confirmDialog(`Payer <strong>${fmt(e.salaire)}</strong> à ${esc(e.nom)} ${esc(e.prenom || '')} depuis la caisse ?`, 'Payer')) return;
+  (e.paiements = e.paiements || []).push({ date: now(), montant: e.salaire });
+  addMovement(c, 'sortie', e.salaire, `Salaire – ${e.nom}`);
+  save(); showSection('employes'); toast('Salaire payé.');
+}
+
+// ==================== PUBLICATIONS ====================
+function renderPublications(main) {
+  const c = getCompany(); const admin = isAdmin();
+  let pubs = c.publications;
+  if (!admin) pubs = pubs.filter(p => (p.vendeurs || []).includes(state.currentUser.employeeId));
+  main.innerHTML = `
+    ${pageHead('Publications', admin ? 'Consignes et annonces pour vos vendeurs' : 'Messages de votre administrateur', admin ? `<button class="btn" onclick="openPubModal()">${icon('plus')} Nouvelle publication</button>` : '')}
+    ${pubs.length ? `<div class="feed">${pubs.map(p => `<article class="card"><div class="post-meta">${fdate(p.date)}${admin ? ` · ${(p.vendeurs || []).length ? 'Pour ' + p.vendeurs.map(id => esc(empName(c, id))).join(', ') : 'Aucun destinataire'}` : ''}</div><p>${esc(p.texte).replace(/\n/g, '<br>')}</p></article>`).join('')}</div>`
+      : `<section class="card">${emptyState('Aucune publication', admin ? 'Publiez une consigne ou une promotion pour vos vendeurs.' : 'Rien de nouveau pour le moment.')}</section>`}`;
+}
+function openPubModal() {
+  const vendeurs = getCompany().employees.filter(e => e.fonction === 'Vendeur');
+  openModal('pubModal', 'Nouvelle publication', `
+    <div class="field"><label for="pubTexte">Message</label><textarea id="pubTexte" placeholder="Ex. Promotion sur les seringues cette semaine…"></textarea></div>
+    <div class="field"><label>Destinataires</label>
+      ${vendeurs.length ? `<div class="checks-inline">${vendeurs.map(v => `<label class="check" for="pv-${v.id}"><input type="checkbox" class="pubVend" id="pv-${v.id}" value="${v.id}" checked>${esc(v.nom)} ${esc(v.prenom || '')}</label>`).join('')}</div>` : `<p class="muted" style="font-size:.85rem">Aucun vendeur. Ajoutez-en depuis Employés pour qu'ils voient vos publications.</p>`}
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal('pubModal')">Annuler</button><button class="btn" onclick="savePub()">Publier</button>`);
+}
+function savePub() {
+  const texte = $('pubTexte').value.trim();
+  if (!texte) { $('pubTexte').focus(); return toast('Écrivez un message avant de publier.', 'err'); }
+  const vendeurs = [...document.querySelectorAll('.pubVend:checked')].map(x => x.value);
+  getCompany().publications.unshift({ id: uid('p'), texte, date: now(), vendeurs });
+  save(); closeModal('pubModal'); showSection('publications'); toast('Publication envoyée.');
+}
+
+// ==================== INIT ====================
+load();
+render();
+</script>
